@@ -15,7 +15,7 @@ atomic-symbol ::= control-symbol
                 | empty
                 | atomic-symbol atomic-symbol
 
-control-symbol ::= "=" | "*" | "-" | "+" | "/" | """
+control-symbol ::= "=" |  "-" | "+" 
 
 letter ::= "a" | "b" | ... | "z"
 
@@ -24,7 +24,11 @@ number ::= "0" | "1" | ... | "9"
 empty ::= ""
 ```
 
+
 ## Semantics
+
+## Scopes
+???
 
 ### Functions
 - "set" [var] [s-exp] -> set result of [s-exp] to variable [var] 
