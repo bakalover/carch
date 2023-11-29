@@ -48,36 +48,54 @@ def convert_to_lists(tokens: list):
         return token
 
 
-def construct(s_exp, instr, data):
-    if isinstance(s_exp, str):
-        data.append(['Data Addr', s_exp])
-        # instr.append({'Instr Addr', Opcode.LOAD, 'Data Addr'})
-    else:
-        match s_exp[0]:
-            case "if":
-                construct(s_exp[1], instr, data)
-                instr.append(['Instr Addr', Opcode.LOAD, 'Data Addr'])
-                instr.append(['Instr Addr', Opcode.CMP, 'Data Addr'])
+dcounter = 0
+icounter = 0
 
-                # acc >= 0
-                instr.append(['Instr Addr', Opcode.JZ, 'Data Addr'])
-                construct(s_exp[2], instr, data)
-                construct(s_exp[3], instr, data)
-            case "==":
-                construct(s_exp[1], instr, data)
-                instr.append(['Instr Addr', Opcode.LOAD, 'Data Addr'])
-                instr.append(['Instr Addr', Opcode.CMP, 'Data Addr'])
-                instr.append(['Instr Addr', Opcode.JZ, 'Data Addr'])
-                construct(s_exp[2], instr, data)
+
+def add_inst(instruction, additional):
+    global icounter
+    instr[icounter] = [instruction, additional]
+    icounter += 1
+
+
+jmp_stack = []
+
+
+def construct(s_exp):
+    global dcounter, icounter
+    match s_exp[0]:
+        case "define":
+            assert len(s_exp) == 3, "Invalid var definition!"
+            data[s_exp[1]] = [s_exp[2]]  # Name and init value
+        case "set":
+            assert len(s_exp) == 3, "Invalid var modifying!"
+            assert data.get(s_exp[1]) != None, "Non-existing var!"
+            construct(s_exp[2])
+            # Value already in ACC store to var in memory
+            add_inst(Opcode.STORE, s_exp[1])
+        case "if":
+            construct(s_exp[1])
+            jmp_stack.append(icounter)
+            add_inst(Opcode.JIL, None)
+            construct(s_exp[2])
+            instr[jmp_stack.pop()][1] = icounter
+            construct(s_exp[3])
+        case "==":
+            construct(s_exp[1])
+            add_inst(Opcode.PUSH, None)
+            construct(s_exp[2])
+            add_inst(Opcode.SUB, None)
+
+
+instr = {}
+data = {}
 
 
 def translate(source: str):
-    instr = []
-    data = []
     source = source.strip().replace('\n', '')
     model = convert_to_lists(to_tokens(source))
     for top_exp in model:
-        construct(top_exp, instr, data)
+        construct(top_exp)
     return instr, data
 
 

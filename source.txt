@@ -1,1 +1,4 @@
-(if (== 0 1) 23 25)
+(define a 1)
+(define b 2)
+(set a 2)
+(if (== 0 1) (set a 3) (set b 4))
