@@ -4,7 +4,7 @@ from enum import Enum
 class Opcode(str, Enum):
 
     ADD = "add"
-    SUB = "sub" #Working with stack
+    SUB = "sub" 
     EQ = "eq"
     PRINT = "print"
     HALT = "halt"
@@ -13,8 +13,6 @@ class Opcode(str, Enum):
     JMP = "jmp"
     LOAD = "load"
     STORE = "store"
-    PUSH = "push"
-    POP = "pop"
 
     def __str__(self):
         return str(self.value)

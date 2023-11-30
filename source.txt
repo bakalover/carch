@@ -1,4 +1,4 @@
 (define a 1)
 (define b 2)
 (set a 2)
-(if (== 0 1) (set a 3) (set b 4))
+(set b (if (== 0 1) (set a (if (== 0 0) 7 8)) (set b 4)))

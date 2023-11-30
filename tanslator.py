@@ -1,4 +1,6 @@
+from enum import Enum
 import sys
+import string
 
 from isa import Opcode
 import re
@@ -48,7 +50,6 @@ def convert_to_lists(tokens: list):
         return token
 
 
-dcounter = 0
 icounter = 0
 
 
@@ -60,35 +61,66 @@ def add_inst(instruction, additional):
 
 jmp_stack = []
 
+const_counter: int = 0
 
-def construct(s_exp):
-    global dcounter, icounter
+
+class Ret(Enum):
+    CONST = 1,
+    GLOB = 2,
+    SPEC = 3
+
+
+def construct(s_exp: [str]):  # -> [Ret, int | str | None]:
+    global icounter, jmp_stack, const_counter
     match s_exp[0]:
+
         case "define":
             assert len(s_exp) == 3, "Invalid var definition!"
-            data[s_exp[1]] = [s_exp[2]]  # Name and init value
+            data['glob'][s_exp[1]] = s_exp[2]  # Name and init value
+            # return [False, s_exp[1]]
+
         case "set":
             assert len(s_exp) == 3, "Invalid var modifying!"
-            assert data.get(s_exp[1]) != None, "Non-existing var!"
-            construct(s_exp[2])
-            # Value already in ACC store to var in memory
+            assert data['glob'].get(s_exp[1]) != None, "Non-existing var!"
+            construct(s_exp[2]) # Set res to Acc
+            # case Ret.SPEC:
+            #     add_inst(Opcode.LOAD, 'spec')
+            # case Ret.CONST:
+            #     add_inst(Opcode.LOAD, construct(s_exp[2])[1])
+            # case Ret.GLOB:
+            #     add_inst(Opcode.LOAD, construct(s_exp[2])[1])
             add_inst(Opcode.STORE, s_exp[1])
+
         case "if":
             construct(s_exp[1])
             jmp_stack.append(icounter)
             add_inst(Opcode.JIL, None)
             construct(s_exp[2])
             instr[jmp_stack.pop()][1] = icounter
+            jmp_stack.append(icounter)
+            add_inst(Opcode.JMP, None)
             construct(s_exp[3])
+            instr[jmp_stack.pop()][1] = icounter
+
         case "==":
             construct(s_exp[1])
-            add_inst(Opcode.PUSH, None)
+            add_inst(Opcode.STORE, 'spec') # Spec - buffer for 2-op commands
             construct(s_exp[2])
-            add_inst(Opcode.SUB, None)
+            add_inst(Opcode.SUB, 'spec')
+
+        case _:  # Constants or vars
+            if s_exp[0].isnumeric():
+                data['const'][const_counter] = s_exp[0]
+                add_inst(Opcode.LOAD, const_counter)
+                const_counter += 1
+                # return [True, const_counter]
+            else:
+                assert data.get(s_exp[1]) != None, "Non-existing var!"
+                add_inst(Opcode.LOAD, s_exp[1])
 
 
 instr = {}
-data = {}
+data = {'glob': {}, 'const': {}, 'spec1': 0}
 
 
 def translate(source: str):
