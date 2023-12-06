@@ -9,10 +9,12 @@ class Opcode(str, Enum):
     PRINT = "print"
     HALT = "halt"
     JZ = "jz"
-    JIL = "jil"
     JMP = "jmp"
     LOAD = "load"
     STORE = "store"
+    PUSH = "push"
+    POP = "pop"
+    ZERO = "zero" 
 
     def __str__(self):
         return str(self.value)

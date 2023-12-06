@@ -1,6 +1,2 @@
-(define a 1)
-(define b 2)
-(define c 3)
-(define d 4)
-(define f 0)
-(set f (+ (+ a b) (+ c d) ))
+(define x 2)
+(if (== 1 x) "aa" "bb")

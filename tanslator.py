@@ -6,154 +6,141 @@ from parsing import convert_to_lists, to_tokens
 from pprint import pprint
 
 
-icounter = 0
-
 jmp_stack = []
-
-const_counter: int = 0
-global_counter: int = 0
-
-# Data =
-# | Global vars
-# | Anon Constants (enumed during translation)
-# | Data.Spec (buff-reg for 2-op commands)
-#
-# Global entry -> (name, value)
-# Const -> (number, value)
-# Data.Spec -> (value)
-#
-# Mapping to memory:
-# Global -> From beggining
-# Const -> Magic offset + number
-# Data.Spec -> End
-# Stack ???
+icounter: int = 0
+acounter: int = 0
+ncounter: int = 0
 
 
 class Data(Enum):
-    Global = 1,
-    Const = 2,
-    Spec = 3
-    Acc = 4
+    Named = 1,
+    Anon = 2,
+    StackPtr = 3
 
 
 word = 16
 const_offset = 100 * word
-data = {Data.Global: {}, Data.Const: {}, Data.Spec: 0}
+data = {Data.Named: {}, Data.Anon: {}}
+instr = {}
 
 
 class Addr(Enum):
     Direct = 1,
     Indirect = 2,
-    Ptr = 3,
 
 
-def add_inst(instruction: Opcode, mem: Literal[Data.Spec] | Literal[Data.Acc] | str | int | None, addr_type: Addr | None):
+def add_instr(instruction: Opcode, mem:  Literal[Data.StackPtr] | str | int | None, addr_type: Addr | None):
     global icounter
     instr[icounter] = [instruction, mem, addr_type]
     icounter += 1
 
 
-# def add_str(where: Data, var_name: str | None, val: str):
-#     global const_counter
-#     to_add = val[1:-1]
-#     if where == Data.Global:
-#         data[where][var_name] = to_add
-#     else:
-#         data[where][const_counter] = to_add   # for-loop for string
-#         add_inst(Opcode.LOAD, const_counter)  # for-loop for string
-#         const_counter += 1
+def construct(s_exp: List[str] | str) -> bool:  # bool for string control
+    global icounter, jmp_stack, acounter, ncounter
 
-
-def construct(s_exp: List[str] | str):
-    global icounter, jmp_stack, const_counter, global_counter
     match s_exp[0]:
 
         case "define":
             assert len(s_exp) == 3, "Invalid var definition!"
 
-            data[Data.Global][s_exp[1]] = []
-
             # String def
             if s_exp[2].startswith("\""):
+                data[Data.Named][s_exp[1]] = [ncounter, True, acounter]
+                ncounter += 1
                 for c in s_exp[2][1:-1]:
-                    data[Data.Global][s_exp[1]].append([global_counter, c])
-                    global_counter += 1
-                data[Data.Global][s_exp[1]].append([global_counter, 0])
-                global_counter += 1
+                    data[Data.Anon][s_exp[1]].append([acounter, c])
+                    acounter += 1
+                data[Data.Anon][s_exp[1]].append([acounter, 0])
+                acounter += 1
 
             # Number def
             else:
-                data[Data.Global][s_exp[1]] = [global_counter, int(s_exp[2])]
-                global_counter += 1
+                data[Data.Named][s_exp[1]] = [ncounter, False, int(s_exp[2])]
+                ncounter += 1
+            return False  # No matter (won't use as s-exp ret)
 
         case "set":
             assert len(s_exp) == 3, "Invalid var modifying!"
-            assert data[Data.Global].get(s_exp[1]) != None, "Non-existing var!"
-            construct(s_exp[2])
-            # Value's addr to set in ACC after constructing
-            add_inst(Opcode.STORE, s_exp[1], Addr.Direct)
+            assert data[Data.Named].get(s_exp[1]) != None, "Non-existing var!"
+            is_str = construct(s_exp[2])
+            add_instr(Opcode.POP, None, None)
+            add_instr(Opcode.STORE, s_exp[1], Addr.Direct)
+            # S-exp return already in acc
+            return is_str
 
         case "if":
             construct(s_exp[1])
+            add_instr(Opcode.POP, None, None)
             jmp_stack.append(icounter)
-            add_inst(Opcode.JIL, None, None)
-            construct(s_exp[2])
+            add_instr(Opcode.JZ, None, None)
+            is_str1 = construct(s_exp[2])
             instr[jmp_stack.pop()][1] = icounter + 1
             jmp_stack.append(icounter)
-            add_inst(Opcode.JMP, None, None)
-            construct(s_exp[3])
+            add_instr(Opcode.JMP, None, None)
+            is_str2 = construct(s_exp[3])
             instr[jmp_stack.pop()][1] = icounter
+            assert is_str1 == is_str2, "Invalid if-branch s-exp ret result!"
+            return is_str1
 
         case "==":
-            construct(s_exp[1])
-            add_inst(Opcode.STORE, Data.Spec, Addr.Direct)
-            construct(s_exp[2])
-            add_inst(Opcode.LOAD, Data.Acc, Addr.Indirect)
-            add_inst(Opcode.SUB, Data.Spec, Addr.Indirect)
+            is_str1 = construct(s_exp[1])
+            is_str2 = construct(s_exp[2])
+            add_instr(Opcode.POP, None, None)
+            add_instr(Opcode.SUB, Data.StackPtr, Addr.Indirect)
+            add_instr(Opcode.ZERO, None, None)  # Loads zero flag
+            add_instr(Opcode.STORE, Data.StackPtr, Addr.Indirect)
+            assert (not is_str1) and (not is_str2), "Can't compare strings!"
+            return False
 
         case "+":
-            construct(s_exp[1])
-            add_inst(Opcode.STORE, Data.Spec, Addr.Direct)
-            construct(s_exp[2])
-            add_inst(Opcode.LOAD, Data.Acc, Addr.Indirect)
-            add_inst(Opcode.ADD, Data.Spec, Addr.Indirect)
+            is_str1 = construct(s_exp[1])
+            is_str2 = construct(s_exp[2])
+            add_instr(Opcode.POP, None, None)
+            add_instr(Opcode.SUB, None, None)  # acc = acc - [stackptr]
+            add_instr(Opcode.STORE, Data.StackPtr, Addr.Indirect)
+            assert (not is_str1) and (not is_str2), "Can't add to string!"
+            return False
 
         case _:  # Constants or vars to Load
             s_exp = str(s_exp)
+
             # Number const
             if s_exp.isnumeric():
-                data[Data.Const][const_counter] = s_exp
-                add_inst(Opcode.LOAD, const_counter, Addr.Ptr)
-                const_counter += 1
+                data[Data.Anon][acounter] = s_exp
+                add_instr(Opcode.LOAD, acounter, Addr.Direct)
+                acounter += 1
+                add_instr(Opcode.PUSH, None, None)
+                return False
 
             # String const
             elif s_exp.startswith("\""):
-                add_inst(Opcode.LOAD, const_counter, Addr.Ptr)
+                add_instr(Opcode.LOAD, acounter, Addr.Direct)
+                data[Data.Anon][acounter] = acounter + 1 #Giga chad pointer to next
+                acounter += 1
                 for c in s_exp[1:-1]:
-                    data[Data.Const][const_counter] = c
-                    const_counter += 1
-                data[Data.Const][const_counter] = 0
-                const_counter += 1
+                    data[Data.Anon][acounter] = c
+                    acounter += 1
+                data[Data.Anon][acounter] = 0
+                acounter += 1
+                return True
 
             # Var to Load
             else:
-                assert data[Data.Global].get(
+                assert data[Data.Named].get(
                     str(s_exp)) != None, "Non-existing var!"
-                add_inst(Opcode.LOAD, str(s_exp), Addr.Ptr)
-
-
-# Instructions -> (number, opcode, operand's addr | None)
-instr = {}
+                add_instr(Opcode.LOAD, str(s_exp), Addr.Direct)
+                add_instr(Opcode.PUSH, None, None)
+                return data[Data.Named][str(s_exp)][1] # returning flag "is it string"
 
 
 def translate(source: str):
     model = convert_to_lists(to_tokens(source))
     for top_exp in model:
         construct(top_exp)
-    add_inst(Opcode.HALT, None, None)
+    add_instr(Opcode.HALT, None, None)
 
 
-def main(source_path, target_instr_path, target_data_path):
+def main(source_path):
     with open(source_path, encoding="utf-8") as file:
         source = file.read()
         source = "(" + source + ")"
@@ -165,6 +152,6 @@ def main(source_path, target_instr_path, target_data_path):
 
 
 if __name__ == "__main__":
-    assert len(sys.argv) == 4
-    _, source_path, target_instr_path, target_data_path = sys.argv
-    main(source_path, target_instr_path, target_data_path)
+    assert len(sys.argv) == 2
+    _, source_path = sys.argv
+    main(source_path)
