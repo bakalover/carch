@@ -1,4 +1,5 @@
 from enum import Enum
+from pickle import TRUE
 import sys
 from typing import List, Literal
 from isa import Opcode
@@ -7,6 +8,8 @@ from pprint import pprint
 
 
 jmp_stack = []
+breaks = []
+# need to add offset
 icounter: int = 0
 acounter: int = 0
 ncounter: int = 0
@@ -44,7 +47,7 @@ def construct(s_exp: List[str] | str) -> bool:  # bool for string control
             assert len(s_exp) == 3, "Invalid var definition!"
 
             # String def
-            if s_exp[2].startswith("\""):
+            if s_exp[2].startswith("\"") and s_exp[2].endswith("\""):
                 data[Data.Named][s_exp[1]] = [ncounter, True, acounter]
                 ncounter += 1
                 for c in s_exp[2][1:-1]:
@@ -71,6 +74,7 @@ def construct(s_exp: List[str] | str) -> bool:  # bool for string control
         case "if":
             construct(s_exp[1])
             add_instr(Opcode.POP, None, None)
+            add_instr(Opcode.CMP, None, None)
             jmp_stack.append(icounter)
             add_instr(Opcode.JZ, None, None)
             is_str1 = construct(s_exp[2])
@@ -92,6 +96,27 @@ def construct(s_exp: List[str] | str) -> bool:  # bool for string control
             assert (not is_str1) and (not is_str2), "Can't compare strings!"
             return False
 
+        case "loop":
+            jmp_stack.append(icounter)
+            is_str = False
+            for exp in s_exp[1]:
+                is_str = construct(exp)
+            add_instr(Opcode.JMP, jmp_stack.pop(), None)
+            for b in breaks:
+                instr[b][1] = icounter
+                breaks.pop()
+            return is_str
+
+        case "break":
+            is_str = construct(s_exp[1])  # Break ret on top of stack
+            breaks.append(icounter)
+            add_instr(Opcode.JMP, None, None)  # Get out of loop
+            return is_str
+
+        case "nop":
+            add_instr(Opcode.NOP, None, None)  # Get out of loop
+            return False  # No matter
+
         case "+":
             is_str1 = construct(s_exp[1])
             is_str2 = construct(s_exp[2])
@@ -106,16 +131,18 @@ def construct(s_exp: List[str] | str) -> bool:  # bool for string control
 
             # Number const
             if s_exp.isnumeric():
-                data[Data.Anon][acounter] = s_exp
+                data[Data.Anon][acounter] = int(s_exp)
                 add_instr(Opcode.LOAD, acounter, Addr.Direct)
                 acounter += 1
                 add_instr(Opcode.PUSH, None, None)
                 return False
 
             # String const
-            elif s_exp.startswith("\""):
+            elif s_exp.startswith("\"") and s_exp.endswith("\""):
                 add_instr(Opcode.LOAD, acounter, Addr.Direct)
-                data[Data.Anon][acounter] = acounter + 1 #Giga chad pointer to next
+                add_instr(Opcode.PUSH, None, None)
+                data[Data.Anon][acounter] = acounter + \
+                    1  # Giga chad pointer to next
                 acounter += 1
                 for c in s_exp[1:-1]:
                     data[Data.Anon][acounter] = c
@@ -130,7 +157,8 @@ def construct(s_exp: List[str] | str) -> bool:  # bool for string control
                     str(s_exp)) != None, "Non-existing var!"
                 add_instr(Opcode.LOAD, str(s_exp), Addr.Direct)
                 add_instr(Opcode.PUSH, None, None)
-                return data[Data.Named][str(s_exp)][1] # returning flag "is it string"
+                # returning flag "is it string"
+                return data[Data.Named][str(s_exp)][1]
 
 
 def translate(source: str):

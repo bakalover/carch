@@ -4,17 +4,19 @@ from enum import Enum
 class Opcode(str, Enum):
 
     ADD = "add"
-    SUB = "sub" 
+    SUB = "sub"
     EQ = "eq"
     PRINT = "print"
     HALT = "halt"
+    CMP = "cmp"
     JZ = "jz"
     JMP = "jmp"
     LOAD = "load"
     STORE = "store"
     PUSH = "push"
     POP = "pop"
-    ZERO = "zero" 
+    NOP = "nop"
+    ZERO = "zero"
 
     def __str__(self):
         return str(self.value)
