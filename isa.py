@@ -5,7 +5,6 @@ class Opcode(str, Enum):
 
     ADD = "add"
     SUB = "sub"
-    EQ = "eq"
     PRINT = "print"
     HALT = "halt"
     CMP = "cmp"
@@ -17,15 +16,8 @@ class Opcode(str, Enum):
     POP = "pop"
     NOP = "nop"
     ZERO = "zero"
+    CALL = "call"
+    RET = "ret"
 
     def __str__(self):
         return str(self.value)
-
-
-def symbol2opcode(symbol):
-    return {
-        "-": Opcode.SUB,
-        "+": Opcode.ADD,
-        "==": Opcode.EQ,
-        "print": Opcode.PRINT,
-    }.get(symbol)
