@@ -34,17 +34,11 @@ data = {Data.Named: {}, Data.Anon: {}}
 instr = {}
 
 
-class Addr(Enum):
-    Direct = 1,
-    Indirect = 2,
-
-
 def add_instr(instruction: Opcode,
               mem:  Literal[Data.FStack] | Literal[Data.EStack] | str | int | None = None,
-              shift: int = 0,
-              addr_type: Addr | None = None):
+              shift: int = 0):
     global icounter
-    instr[icounter] = [instruction, mem, shift, addr_type]
+    instr[icounter] = [instruction, mem, shift]
     icounter += 1
 
 
@@ -78,7 +72,7 @@ def construct(s_exp: List[str] | str, ctx: str | None = None) -> bool | None:
             assert data[Data.Named].get(s_exp[1]) != None, "Non-existing var!"
             is_str = construct(s_exp[2], ctx)
             add_instr(Opcode.EPOP)
-            add_instr(Opcode.STORE, s_exp[1], 0, Addr.Direct)
+            add_instr(Opcode.STORE, s_exp[1])
             add_instr(Opcode.EPUSH)  # S-exp ret
             return is_str
 
@@ -111,7 +105,7 @@ def construct(s_exp: List[str] | str, ctx: str | None = None) -> bool | None:
                 add_instr(Opcode.PRINT)
             else:
                 jmp_stack.append(icounter)
-                add_instr(Opcode.LOAD, Data.EStack, 0, Addr.Indirect)
+                add_instr(Opcode.LOAD, Data.EStack)
                 add_instr(Opcode.CMP)
                 add_instr(Opcode.JZ, icounter + 4)
                 add_instr(Opcode.PRINT)
@@ -127,11 +121,11 @@ def construct(s_exp: List[str] | str, ctx: str | None = None) -> bool | None:
             add_instr(Opcode.READ)
             add_instr(Opcode.CMP)
             add_instr(Opcode.JZ, icounter + 4)
-            add_instr(Opcode.STORE, Data.EStack, 0, Addr.Indirect)
+            add_instr(Opcode.STORE, Data.EStack)
             add_instr(Opcode.INCESTACK)
             add_instr(Opcode.JMP, jmp_stack.pop())
             add_instr(Opcode.CLEAR)
-            add_instr(Opcode.STORE, Data.EStack, 0, Addr.Indirect)
+            add_instr(Opcode.STORE, Data.EStack)
             add_instr(Opcode.EPOP)
 
         case "if":
@@ -156,7 +150,7 @@ def construct(s_exp: List[str] | str, ctx: str | None = None) -> bool | None:
             add_instr(Opcode.EPOP)
             add_instr(Opcode.SUB)  # acc = acc - [estack]
             add_instr(Opcode.ZERO)  # Loads zero flag
-            add_instr(Opcode.STORE, Data.EStack, 0, Addr.Indirect)
+            add_instr(Opcode.STORE, Data.EStack)
             assert (not is_str1) and (
                 not is_str2), "Can't compare with strings/Nops!"
             return False
@@ -190,7 +184,7 @@ def construct(s_exp: List[str] | str, ctx: str | None = None) -> bool | None:
             is_str2 = construct(s_exp[2], ctx)
             add_instr(Opcode.EPOP)
             add_instr(Opcode.ADD)  # acc = acc + [estack]
-            add_instr(Opcode.STORE, Data.EStack, 0, Addr.Indirect)
+            add_instr(Opcode.STORE, Data.EStack)
             assert (not is_str1) and (not is_str2), "Can't add to string!"
             return False
 
@@ -200,14 +194,14 @@ def construct(s_exp: List[str] | str, ctx: str | None = None) -> bool | None:
             # Number const
             if s_exp.isnumeric():
                 data[Data.Anon][acounter] = int(s_exp)
-                add_instr(Opcode.LOAD, acounter, 0, Addr.Direct)
+                add_instr(Opcode.LOAD, acounter)
                 acounter += 1
                 add_instr(Opcode.EPUSH)
                 return False
 
             # String const
             elif s_exp.startswith("\"") and s_exp.endswith("\""):
-                add_instr(Opcode.LOAD, acounter, 0, Addr.Direct)
+                add_instr(Opcode.LOAD, acounter)
                 add_instr(Opcode.EPUSH)
                 # Giga chad pointer to next
                 data[Data.Anon][acounter] = acounter + 1
@@ -224,16 +218,16 @@ def construct(s_exp: List[str] | str, ctx: str | None = None) -> bool | None:
                 if ctx == None:
                     assert data[Data.Named].get(
                         s_exp) != None, "Non-existing var: \"{}\"!".format(s_exp)
-                    add_instr(Opcode.LOAD, s_exp, 0, Addr.Direct)
+                    add_instr(Opcode.LOAD, s_exp)
                     add_instr(Opcode.EPUSH)
                     # returning flag "is it string"
                     return data[Data.Named][s_exp][1]
                 elif data[Data.Named].get(s_exp) != None:
-                    add_instr(Opcode.LOAD, s_exp, 0, Addr.Direct)
+                    add_instr(Opcode.LOAD, s_exp)
                     add_instr(Opcode.EPUSH)
                     return data[Data.Named][s_exp][1]
                 elif functions[ctx][1] == s_exp:
-                    add_instr(Opcode.LOAD, Data.FStack, word, Addr.Indirect)
+                    add_instr(Opcode.LOAD, Data.FStack, word)
                     add_instr(Opcode.EPUSH)
                     return False  # Functions currently support only numbers (
                 else:
