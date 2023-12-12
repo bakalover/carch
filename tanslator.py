@@ -239,9 +239,16 @@ def construct(s_exp: List[str] | str, ctx: str | None = None) -> bool | None:
 
 def translate(source: str):
     model = convert_to_lists(to_tokens(source))
+    add_instr(Opcode.JMP, None)
+    is_main = False
     for top_exp in model:
-        construct(top_exp, None)
-    add_instr(Opcode.HALT)
+        if top_exp[0] != "defun" and top_exp[0] != "define" and not is_main:
+            is_main = True
+            instr[0][1] = icounter
+            construct(top_exp, None)
+            add_instr(Opcode.HALT)
+        else:
+            construct(top_exp, None)
 
 
 def main(source_path):
