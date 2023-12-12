@@ -9,15 +9,18 @@ from pprint import pprint
 jmp_stack = []
 breaks = []
 
-# "name": [start_addr, arg: int]
+# "name" aka ctx: [start_addr, arg: int]
 functions = {}
 
-word = 16
-anon_offset = 100 * word
+# Data word size
+word: int = 0x20
 
-icounter: int = 0
+# Offset by 256 words
+anon_offset: int = 0x100 * word
+
+icounter: int = 0x0
 acounter: int = anon_offset
-ncounter: int = 0
+ncounter: int = 0x0
 
 
 class Data(Enum):
