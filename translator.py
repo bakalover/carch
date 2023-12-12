@@ -1,9 +1,9 @@
-from enum import Enum
+from binary import binary_transform
+from data import Data, anon_offset, word
 import sys
 from typing import List, Literal
 from isa import Opcode
 from parsing import convert_to_lists, to_tokens
-from pprint import pprint
 
 
 jmp_stack = []
@@ -12,22 +12,9 @@ breaks = []
 # "name" aka ctx: [start_addr, arg: int]
 functions = {}
 
-# Data word size
-word: int = 0x20
-
-# Offset by 256 words
-anon_offset: int = 0x100
-
 icounter: int = 0x0
 acounter: int = anon_offset
 ncounter: int = 0x0
-
-
-class Data(Enum):
-    Named = 1,
-    Anon = 2,
-    FStack = 3,
-    EStack = 4,
 
 
 data = {Data.Named: {}, Data.Anon: {}}
@@ -254,50 +241,6 @@ def main(source_path):
         source = "(" + source + ")"
         translate(source)
         binary_transform(instr, data)
-        # pprint(instr)
-        # pprint(data)
-        # make_file(target_instr_path, instructions)
-        # make_file(target_instr_path, data)
-
-
-def binary_transform(instructions, data):
-    for _, instruction in instructions.items():
-        pprint(instruction)
-        to_dump = instruction[0].value
-        mem = instruction[1]
-        shift = instruction[2]
-        match to_dump[2]:
-            case "0":
-                print(to_dump)
-            case "A":
-                if mem == Data.EStack:
-                    to_dump = list(to_dump)
-                    to_dump[4] = '4'
-                    print(hex(int("".join(to_dump), 16) | shift))
-                elif mem == Data.FStack:
-                    to_dump = list(to_dump)
-                    to_dump[4] = '4'
-                    print(hex(int("".join(to_dump), 16) | shift))
-                elif isinstance(mem, str):
-                    addr = data[Data.Named].get(mem)[0]
-                    print(hex(int(to_dump, 16) | addr))
-                else:
-                    print(hex(int(to_dump, 16) | mem))
-
-            case "B":
-                if mem == Data.EStack:
-                    to_dump = list(to_dump)
-                    to_dump[4] = '4'
-                    print(hex(int("".join(to_dump), 16) | shift))
-                elif mem == Data.FStack:
-                    to_dump = list(to_dump)
-                    to_dump[4] = '8'
-                    print(hex(int("".join(to_dump), 16) | shift))
-                else:
-                    addr = data[Data.Named].get(mem)[0]
-                    print(hex(int(to_dump, 16) | addr))
-            case _:
-                print(hex(int(to_dump, 16) | mem))
 
 
 if __name__ == "__main__":
