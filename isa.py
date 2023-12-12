@@ -18,15 +18,11 @@ class Opcode(str, Enum):
     READ = "0x0C00"
     PRINT = "0x0D00"
     INCESTACK = "0x0E00"
-    LOAD = "0xAXXX"
-    STORE = "0xBXXX"
-    CALL = "0xC0XX"
-    JZ = "0xE0XX"
-    JMP = "0xF0XX"
+    LOAD = "0xA000"
+    STORE = "0xB000"
+    CALL = "0xC000"
+    JZ = "0xE000"
+    JMP = "0xF000"
 
     def __str__(self):
         return str(self.value)
-
-
-def binary_transform(instr):
-    1

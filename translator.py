@@ -253,10 +253,51 @@ def main(source_path):
         source = file.read()
         source = "(" + source + ")"
         translate(source)
-        pprint(instr)
-        pprint(data)
+        binary_transform(instr, data)
+        # pprint(instr)
+        # pprint(data)
         # make_file(target_instr_path, instructions)
         # make_file(target_instr_path, data)
+
+
+def binary_transform(instructions, data):
+    for _, instruction in instructions.items():
+        pprint(instruction)
+        to_dump = instruction[0].value
+        mem = instruction[1]
+        shift = instruction[2]
+        match to_dump[2]:
+            case "0":
+                print(to_dump)
+            case "A":
+                if mem == Data.EStack:
+                    to_dump = list(to_dump)
+                    to_dump[4] = '4'
+                    print(hex(int("".join(to_dump), 16) | shift))
+                elif mem == Data.FStack:
+                    to_dump = list(to_dump)
+                    to_dump[4] = '4'
+                    print(hex(int("".join(to_dump), 16) | shift))
+                elif isinstance(mem, str):
+                    addr = data[Data.Named].get(mem)[0]
+                    print(hex(int(to_dump, 16) | addr))
+                else:
+                    print(hex(int(to_dump, 16) | mem))
+
+            case "B":
+                if mem == Data.EStack:
+                    to_dump = list(to_dump)
+                    to_dump[4] = '4'
+                    print(hex(int("".join(to_dump), 16) | shift))
+                elif mem == Data.FStack:
+                    to_dump = list(to_dump)
+                    to_dump[4] = '8'
+                    print(hex(int("".join(to_dump), 16) | shift))
+                else:
+                    addr = data[Data.Named].get(mem)[0]
+                    print(hex(int(to_dump, 16) | addr))
+            case _:
+                print(hex(int(to_dump, 16) | mem))
 
 
 if __name__ == "__main__":
