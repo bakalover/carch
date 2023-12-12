@@ -16,7 +16,7 @@ functions = {}
 word: int = 0x20
 
 # Offset by 256 words
-anon_offset: int = 0x100 * word
+anon_offset: int = 0x100
 
 icounter: int = 0x0
 acounter: int = anon_offset
