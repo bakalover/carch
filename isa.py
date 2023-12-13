@@ -18,6 +18,7 @@ class Opcode(str, Enum):
     READ = "0x1C00"
     PRINT = "0x1D00"
     INCESTACK = "0x1E00"
+    MOD = "0x1F00"
     LOAD = "0xA000"
     STORE = "0xB000"
     CALL = "0xC000"
@@ -26,3 +27,4 @@ class Opcode(str, Enum):
 
     def __str__(self):
         return str(self.value)
+

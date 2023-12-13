@@ -19,15 +19,11 @@ def binary_transform(instructions, data):
                     file.write(int(to_dump, 16).to_bytes(16, 'big'))
                 case "A":
                     if mem == Data.EStack:
-                        to_dump = list(to_dump)
-                        to_dump[3] = '4'
                         file.write(
-                            (int("".join(to_dump), 16) | shift).to_bytes(16, 'big'))
+                            (int(to_dump, 16) | shift | 0x0400).to_bytes(16, 'big'))
                     elif mem == Data.FStack:
-                        to_dump = list(to_dump)
-                        to_dump[3] = '4'
-                        file.write((int("".join(to_dump), 16)
-                                   | shift).to_bytes(16, 'big'))
+                        file.write(
+                            (int(to_dump, 16) | shift | 0x0800).to_bytes(16, 'big'))
                     elif isinstance(mem, str):
                         addr = data[Data.Named].get(mem)[0]
                         file.write(
@@ -38,21 +34,18 @@ def binary_transform(instructions, data):
 
                 case "B":
                     if mem == Data.EStack:
-                        to_dump = list(to_dump)
-                        to_dump[3] = '4'
                         file.write(
-                            (int("".join(to_dump), 16) | shift).to_bytes(16, 'big'))
+                            (int(to_dump, 16) | shift | 0x0400).to_bytes(16, 'big'))
                     elif mem == Data.FStack:
-                        to_dump = list(to_dump)
-                        to_dump[3] = '8'
                         file.write(
-                            (int("".join(to_dump), 16) | shift).to_bytes(16, 'big'))
+                            int(to_dump, 16) | shift | 0x0800).to_bytes(16, 'big')
                     else:
                         addr = data[Data.Named].get(mem)[0]
                         file.write(
                             (int(to_dump, 16) | addr).to_bytes(16, 'big'))
                 case _:
                     file.write((int(to_dump, 16) | mem).to_bytes(16, 'big'))
+
     with open('data', 'wb') as file:
         file.write(b'\x00' * 32 * 1024)
         file.seek(0)

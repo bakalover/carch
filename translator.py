@@ -4,7 +4,7 @@ import sys
 from typing import List, Literal
 from isa import Opcode
 from parsing import convert_to_lists, to_tokens
-
+from collections import namedtuple
 
 jmp_stack = []
 breaks = []
@@ -32,6 +32,13 @@ def add_instr(instruction: Opcode,
 # bool for string control
 def construct(s_exp: List[str] | str, ctx: str | None = None) -> bool | None:
     global icounter, jmp_stack, acounter, ncounter, breaks
+
+    check_exp: str
+
+    # if isinstance(s_exp, str):
+    #     check_exp = s_exp
+    # else:
+    #     check_exp = s_exp[0]
 
     match s_exp[0]:
 
@@ -173,6 +180,16 @@ def construct(s_exp: List[str] | str, ctx: str | None = None) -> bool | None:
             add_instr(Opcode.ADD)  # acc = acc + [estack]
             add_instr(Opcode.STORE, Data.EStack)
             assert (not is_str1) and (not is_str2), "Can't add to string!"
+            return False
+
+        case "%":
+            # Construction order is important due estack
+            is_str2 = construct(s_exp[2], ctx)
+            is_str1 = construct(s_exp[1], ctx)
+            add_instr(Opcode.EPOP)
+            add_instr(Opcode.MOD)  # acc = acc % [estack]
+            add_instr(Opcode.STORE, Data.EStack)
+            assert (not is_str1) and (not is_str2), "Strings!"
             return False
 
         case _:  # Constants or vars to Load
