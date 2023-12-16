@@ -4,7 +4,6 @@ import sys
 from typing import List, Literal
 from isa import Opcode
 from parsing import convert_to_lists, to_tokens
-from collections import namedtuple
 
 jmp_stack = []
 breaks = []

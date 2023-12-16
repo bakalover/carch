@@ -14,6 +14,8 @@ class DataPath:
 
     acc = None
 
+    zero_flag = 0
+
     input_buffer = None
 
     output_buffer = None
@@ -25,6 +27,7 @@ class DataPath:
         self.estack_ptr = 768  # 1024 - 256
         self.fstack_ptr = 1024
         self.acc = 0
+        self.zero_flag = 0
         self.input_buffer = input_buffer
         self.output_buffer = []
 
@@ -42,13 +45,55 @@ class ControlUnit:
     def tick(self):
         self.icounter += 1
 
-    def decode_instruction(self):
-        instr = self.instr_memory[self.icounter * 16:(self.icounter+1)*16][14:16].hex()
-        self.tick()
-        print(instr)
+    def acquire_next_instruction(self) -> str:
+        assert (self.icounter+1)*16 <= 1024, "Memory border!"
+        return self.instr_memory[self.icounter *
+                                 16:(self.icounter+1)*16][14:16].hex()
 
     def execute_instruction(self):
-        instruction = self.decode_instruction()
+        instr: str = self.acquire_next_instruction()
+
+        if instr[0] == "1":
+            self.execute_non_arg_instruction(instr)
+        else:
+            self.execute_arg_instruction(instr)
+
+        self.tick()
+
+    def execute_arg_instruction(self, instr: str):
+        # Fetch address or offset
+        0
+
+    def execute_non_arg_instruction(self, instr: str):
+        concrete: str = instr[1]
+        if concrete == "1":  # Halt
+            raise StopIteration
+        elif concrete == "2":  # CMP
+            self.data_path.latch_set_flag()
+        elif concrete in {"3", "4", "5", "6", "E"}:  # Stacks
+            self.execute_stack_instruction(instr)
+        elif concrete == "7":
+            self.data_path.latch_get_flag()
+        elif concrete == "8":
+            0
+        elif concrete == "9":
+            self.data_path.clear_acc()
+        elif concrete in {"A", "B", "F"}:  # Arith
+            self.execute_arith_instruction(instr)
+        else:
+            self.execute_io_instruction(instr)
+
+    def execute_stack_instruction(self, instr: str):
+        0
+
+    def execute_arith_instruction(self, instr: str):
+        0
+
+    def execute_io_instruction(self, instr: str):
+        0
+
+    # def execute_instruction(self):
+    #     instruction = self.decode_instruction()
 
 
 def simulation(instr: bytes, data: bytearray, input_buf: List[str]):
@@ -63,7 +108,7 @@ def simulation(instr: bytes, data: bytearray, input_buf: List[str]):
         pass
 
 
-def main(instr_file, data_file, input_file):
+def main(instr_file: str, data_file: str, input_file: str):
     with open(instr_file, "br") as instr_f:
         code: bytes = instr_f.read()  # Instructions not mutable
     with open(data_file, "br") as data_f:
