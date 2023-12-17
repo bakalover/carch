@@ -6,13 +6,15 @@ class DataPath:
 
     data_memory_size = None
 
-    data = None
+    data: bytearray
 
-    estack_ptr = None
+    data_address: int
 
-    fstack_ptr = None
+    estack_ptr: int
 
-    acc = None
+    fstack_ptr: int
+
+    acc: int
 
     zero_flag = 0
 
@@ -30,6 +32,27 @@ class DataPath:
         self.zero_flag = 0
         self.input_buffer = input_buffer
         self.output_buffer = []
+
+    def latch_set_zero(self):
+        if self.acc == 0:
+            self.zero_flag = 1
+        else:
+            self.zero_flag = 0
+
+    def latch_addr(self, sel: str):
+        if sel in {"3", "4"}:  # Fstack
+            self.data_address = self.fstack_ptr
+        elif sel in {"5", "6"}:  # EStack
+            self.data_address = self.estack_ptr
+
+    def sig_write(self):
+        self.data[self.data_address] = self.acc
+
+    def latch_acc(self, sel: str | None = None): # None == from memory
+        if sel == "7":
+            self.acc = self.zero_flag
+        else:
+            self.acc = self.data[self.data_address]
 
 
 class ControlUnit:
@@ -69,22 +92,37 @@ class ControlUnit:
         if concrete == "1":  # Halt
             raise StopIteration
         elif concrete == "2":  # CMP
-            self.data_path.latch_set_flag()
+            self.data_path.latch_set_zero()
         elif concrete in {"3", "4", "5", "6", "E"}:  # Stacks
             self.execute_stack_instruction(instr)
-        elif concrete == "7":
-            self.data_path.latch_get_flag()
-        elif concrete == "8":
+        elif concrete == "7":  # Load Zero flag
+            self.data_path.latch_acc(concrete)
+        elif concrete == "8":  # Return
             0
-        elif concrete == "9":
+        elif concrete == "9":  # Clear Acc
             self.data_path.clear_acc()
         elif concrete in {"A", "B", "F"}:  # Arith
             self.execute_arith_instruction(instr)
-        else:
+        elif concrete in {"C", "D"}:  # IO
             self.execute_io_instruction(instr)
 
     def execute_stack_instruction(self, instr: str):
-        0
+        if instr == "3":
+            self.data_path.latch_addr(instr)
+            self.data_path.sig_write()
+            self.data_path.fstack_ptr -= 1
+        elif instr == "4":
+            self.data_path.latch_addr(instr)
+            self.data_path.latch_acc()
+            self.data_path.fstack_ptr += 1
+        elif instr == "5":
+            self.data_path.latch_addr(instr)
+            self.data_path.sig_write()
+            self.data_path.estack_ptr -= 1
+        elif instr == "6":
+            self.data_path.latch_addr(instr)
+            self.data_path.latch_acc()
+            self.data_path.estack_ptr += 1
 
     def execute_arith_instruction(self, instr: str):
         0
