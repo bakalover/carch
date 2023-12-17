@@ -1,29 +1,29 @@
+from ast import Call
 import sys
+from token import OP
 from typing import List
+
+from binary import bin2op_no_arg, bin2op_with_arg
+from isa import Opcode
+
+DATAWORD: int = 32
+INSTRWORD: int = 16
 
 
 class DataPath:
 
-    data_memory_size = None
-
+    data_memory_size: int
     data: bytearray
-
     data_address: int
-
     estack_ptr: int
-
     fstack_ptr: int
-
     acc: int
-
-    zero_flag = 0
-
-    input_buffer = None
-
-    output_buffer = None
+    zero_flag: int
+    input_buffer: List[str]
+    output_buffer: List[str]
 
     def __init__(self, data: bytearray, input_buffer: List[str]):
-        self.data_memory_size = 32 * 1024
+        self.data_memory_size = DATAWORD * 1024
         self.data = data
         self.data_address = 0
         self.estack_ptr = 768  # 1024 - 256
@@ -33,38 +33,50 @@ class DataPath:
         self.input_buffer = input_buffer
         self.output_buffer = []
 
+    def mem_load(self) -> int:
+        assert self.data_address+1 <= 1024, "Data memory border violation!"
+        return int.from_bytes(self.data[self.data_address*DATAWORD: (self.data_address+1)*DATAWORD], 'big')
+
+    def mem_store(self, val: int):
+        self.data[self.data_address *
+                  DATAWORD: (self.data_address+1)*DATAWORD] = val.to_bytes(DATAWORD, 'big')
+
     def latch_set_zero(self):
         if self.acc == 0:
             self.zero_flag = 1
         else:
             self.zero_flag = 0
 
-    def latch_addr(self, sel: str):
-        if sel == "3":  # Fstack
+    def latch_addr(self, sel: Opcode, shift: int = 0):
+        if sel == Opcode.FPUSH:
             self.data_address = self.fstack_ptr
             self.fstack_ptr -= 1
-        elif sel == "4":
+        elif sel == Opcode.FPOP:
             self.data_address = self.fstack_ptr
             self.fstack_ptr += 1
-        elif sel == "5":  # EStack
+        elif sel == Opcode.EPUSH:
             self.data_address = self.estack_ptr
             self.fstack_ptr -= 1
-        elif sel == "6":
+        elif sel == Opcode.EPOP:
             self.data_address = self.estack_ptr
             self.estack_ptr += 1
-        elif sel in {"A", "B", "F", "E"}:
+        elif sel in {Opcode.ADD, Opcode.SUB, Opcode.MOD, Opcode.INCESTACK}:
             self.data_address = self.estack_ptr
 
-    def sig_write(self):
-        self.data[self.data_address *
-                  32: (self.data_address+1)*32] = self.acc.to_bytes(32, "big")
+    def sig_write(self, io: bool = False):
+        if io:
+            assert len(self.input_buffer) == 0, "EOF!"
+            symb_code = ord(self.input_buffer.pop(0))
+            assert -128 <= symb_code <= 127, "Not ASCII symbol"
+            self.mem_store(symb_code)
+        else:
+            self.mem_store(self.acc)
 
     def latch_acc(self, sel: str | None = None):  # None == from memory
         if sel == "7":
             self.acc = self.zero_flag
         else:
-            self.acc = int.from_bytes(self.data[self.data_address *
-                                                32: (self.data_address+1)*32], 'big')
+            self.acc = self.mem_load()
 
     def acc_inc(self):
         self.acc += 1
@@ -72,8 +84,30 @@ class DataPath:
     def clear_acc(self):
         self.acc = 0
 
+    def setup_zero_flag(self):
+        if self.acc == 0:
+            self.zero_flag = 1
+        else:
+            self.zero_flag = 0
+
+    def sig_sum(self):
+        self.acc += self.mem_load()
+        self.setup_zero_flag()
+
+    def sig_sub(self):
+        self.acc -= self.mem_load()
+        self.setup_zero_flag()
+
+    def sig_mod(self):
+        self.acc %= self.mem_load()
+        self.setup_zero_flag()
+
+    def sig_out(self):
+        self.output_buffer.append(chr(self.acc))
+
 
 class ControlUnit:
+
     instr_memory: bytes
     icounter: int
     data_path: DataPath
@@ -87,9 +121,9 @@ class ControlUnit:
         self.icounter += 1
 
     def acquire_next_instruction(self) -> str:
-        assert (self.icounter+1)*16 <= 1024, "Memory border violation!"
+        assert self.icounter + 1 <= 1024, "Instruction memory border violation!"
         return self.instr_memory[self.icounter *
-                                 16:(self.icounter+1)*16][14:16].hex()
+                                 INSTRWORD:(self.icounter+1)*INSTRWORD][14:16].hex()
 
     def execute_instruction(self):
         instr: str = self.acquire_next_instruction()
@@ -102,54 +136,79 @@ class ControlUnit:
         self.tick()
 
     def execute_arg_instruction(self, instr: str):
-        # Fetch address or offset
-        0
+        specific = bin2op_with_arg(instr)
+        match specific:
+            case Opcode.LOAD:
+                if instr[2] in {"8", "4"}:  # F/E Stack
+                    self.data_path.latch_addr(
+                        Opcode.LOAD, int(instr) & 0x00FF)  # + shift
+                else:
+                    self.data_path.latch_addr(Opcode.LOAD,  int(
+                        instr) & 0x03FF)  # addr x DataWord
+                self.data_path.latch_acc()
+            case Opcode.STORE:  # Store
+                if instr[2] in {"8", "4"}:  # F/E Stack
+                    self.data_path.latch_addr(specific, )  # + shift
+                else:
+                    self.data_path.latch_addr()  # addr x DataWord
+                self.data_path.sig_write()
+            case Opcode.CALL:
+                self.data_path.acc = self.icounter  # direct wire on scheme
+                self.execute_stack_instruction(Opcode.FPUSH)
+                self.icounter = int(instr[1:])
+            case Opcode.JZ:
+                if self.data_path.zero_flag == 1:
+                    self.icounter = int(instr[1:])
+            case Opcode.JMP:
+                self.icounter = int(instr[1:])
 
     def execute_non_arg_instruction(self, instr: str):
-        specific: str = instr[1]
-        if specific == "1":  # Halt
+        specific = bin2op_no_arg(instr[:2])
+        if specific == Opcode.HALT:
             raise StopIteration
-        elif specific == "2":  # CMP
+        elif specific == Opcode.CMP:
             self.data_path.latch_set_zero()
-        elif specific in {"3", "4", "5", "6", "E"}:  # Stacks
+        elif specific in {Opcode.FPUSH, Opcode.FPOP, Opcode.EPUSH, Opcode.EPOP, Opcode.INCESTACK}:
             self.execute_stack_instruction(specific)
-        elif specific == "7":  # Load Zero flag
+        elif specific == Opcode.ZERO:
             self.data_path.latch_acc(specific)
-        elif specific == "8":  # Return
-            self.execute_stack_instruction("4")  # Poping ret addr into acc
+        elif specific == Opcode.RET:
+            self.execute_stack_instruction(
+                Opcode.FPOP)
             self.icounter = self.data_path.acc  # wire to controlunit from acc
-        elif specific == "9":  # Clear Acc
+        elif specific == Opcode.CLEAR:  # Clear Acc
             self.data_path.clear_acc()
-        elif specific in {"A", "B", "F"}:  # Arith
-            self.execute_arith_instruction(instr)
-        elif specific in {"C", "D"}:  # IO
-            self.execute_io_instruction(instr)
+        elif specific in {Opcode.ADD, Opcode.SUB, Opcode.MOD}:  # Arith
+            self.execute_arith_instruction(specific)
+        elif specific in {Opcode.READ, Opcode.PRINT}:  # IO
+            self.execute_io_instruction(specific)
 
-    def execute_stack_instruction(self, instr: str):
+    def execute_stack_instruction(self, instr: Opcode):
         self.data_path.latch_addr(instr)
-        if instr in {"3", "5"}:
+        if instr in {Opcode.FPUSH, Opcode.EPUSH}:
             self.data_path.sig_write()
-        elif instr in {"4", "6"}:
+        elif instr in {Opcode.EPOP, Opcode.FPOP}:
             self.data_path.latch_acc()
-        elif instr == "E":
+        elif instr == Opcode.INCESTACK:
             self.data_path.latch_acc()
             self.data_path.acc_inc()
             self.data_path.sig_write()
 
-    def execute_arith_instruction(self, instr: str):
-        self.data_path.latch_addr(instr) # Getting estack_ptr as addr
-        if instr == "A":
-            self.data_path.sig_sum() # Sig dirrectrly to acc (apply opp with 2-args)
-        elif instr == "B":
+    def execute_arith_instruction(self, instr: Opcode):
+        self.data_path.latch_addr(instr)  # Getting estack_ptr as addr
+        if instr == Opcode.ADD:
+            # Sig dirrectly to acc (apply opp with 2-args: acc and [estack_ptr])
+            self.data_path.sig_sum()
+        elif instr == Opcode.SUB:
             self.data_path.sig_sub()
-        elif instr == "F"
+        elif instr == Opcode.MOD:
             self.data_path.sig_mod()
 
-    def execute_io_instruction(self, instr: str):
-        0
-
-    # def execute_instruction(self):
-    #     instruction = self.decode_instruction()
+    def execute_io_instruction(self, instr: Opcode):
+        if instr == Opcode.PRINT:
+            self.data_path.sig_out()
+        else:
+            self.data_path.sig_write(io=True)
 
 
 def simulation(instr: bytes, data: bytearray, input_buf: List[str]):
