@@ -73,8 +73,8 @@ def construct(s_exp: List[str] | str, ctx: str | None = None) -> bool | None:
             assert len(s_exp) == 4, "Invalid function definition!"
             functions[s_exp[1]] = [icounter, s_exp[2][0]]
             for exp in s_exp[3]:
-                construct(exp, s_exp[1])  # Last BOI as ret on top of sstack
-            add_instr(Opcode.RET)  # Just ret (result on top of sstack)
+                construct(exp, s_exp[1])  # Last BOI as ret on top of estack
+            add_instr(Opcode.RET)  # Just ret (result on top of estack)
             return None
 
         case "fucall":
