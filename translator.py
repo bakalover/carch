@@ -1,5 +1,5 @@
 from binary import binary_transform
-from data import Data, anon_offset, word
+from data import Data, anon_offset, DATAWORD
 import sys
 from typing import List, Literal
 from isa import Opcode
@@ -230,7 +230,7 @@ def construct(s_exp: List[str] | str, ctx: str | None = None) -> bool | None:
                     add_instr(Opcode.EPUSH)
                     return data[Data.Named][s_exp][1]
                 elif functions[ctx][1] == s_exp:
-                    add_instr(Opcode.LOAD, Data.FStack, word)
+                    add_instr(Opcode.LOAD, Data.FStack, DATAWORD)
                     add_instr(Opcode.EPUSH)
                     return False  # Functions currently support only numbers (
                 else:

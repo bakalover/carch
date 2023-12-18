@@ -1,13 +1,14 @@
-from ast import Call
 import sys
-from token import OP
 from typing import List
-
 from binary import bin2op_no_arg, bin2op_with_arg
 from isa import Opcode
+from data import INSTRWORD, DATAWORD
 
-DATAWORD: int = 32
-INSTRWORD: int = 16
+ADDRMASK: int = 0x0FFF
+OFFSETMASK: int = 0x03FF
+STACKMASK: int = 0x0F00
+FSTACKMASK: int = 0x0800
+ESTACKMASK: int = 0x0400
 
 
 class DataPath:
@@ -47,7 +48,7 @@ class DataPath:
         else:
             self.zero_flag = 0
 
-    def latch_addr(self, sel: Opcode, shift: int = 0):
+    def latch_addr(self, sel: Opcode, addr: int = 0):
         if sel == Opcode.FPUSH:
             self.data_address = self.fstack_ptr
             self.fstack_ptr -= 1
@@ -62,6 +63,11 @@ class DataPath:
             self.estack_ptr += 1
         elif sel in {Opcode.ADD, Opcode.SUB, Opcode.MOD, Opcode.INCESTACK}:
             self.data_address = self.estack_ptr
+        elif sel in {Opcode.LOAD, Opcode.STORE}:
+            if addr & STACKMASK == FSTACKMASK:
+                self.data_address = self.fstack_ptr + (addr & OFFSETMASK)
+            elif addr & STACKMASK == ESTACKMASK:
+                self.data_address = self.estack_ptr + (addr & OFFSETMASK)
 
     def sig_write(self, io: bool = False):
         if io:
@@ -72,8 +78,8 @@ class DataPath:
         else:
             self.mem_store(self.acc)
 
-    def latch_acc(self, sel: str | None = None):  # None == from memory
-        if sel == "7":
+    def latch_acc(self, sel: Opcode | None = None):  # None == from memory
+        if sel == Opcode.ZERO:
             self.acc = self.zero_flag
         else:
             self.acc = self.mem_load()
@@ -123,7 +129,7 @@ class ControlUnit:
     def acquire_next_instruction(self) -> str:
         assert self.icounter + 1 <= 1024, "Instruction memory border violation!"
         return self.instr_memory[self.icounter *
-                                 INSTRWORD:(self.icounter+1)*INSTRWORD][14:16].hex()
+                                 INSTRWORD:(self.icounter+1)*INSTRWORD].hex()
 
     def execute_instruction(self):
         instr: str = self.acquire_next_instruction()
@@ -139,23 +145,16 @@ class ControlUnit:
         specific = bin2op_with_arg(instr)
         match specific:
             case Opcode.LOAD:
-                if instr[2] in {"8", "4"}:  # F/E Stack
-                    self.data_path.latch_addr(
-                        Opcode.LOAD, int(instr) & 0x00FF)  # + shift
-                else:
-                    self.data_path.latch_addr(Opcode.LOAD,  int(
-                        instr) & 0x03FF)  # addr x DataWord
+                self.data_path.latch_addr(Opcode.LOAD,  int(instr) & ADDRMASK)
                 self.data_path.latch_acc()
-            case Opcode.STORE:  # Store
-                if instr[2] in {"8", "4"}:  # F/E Stack
-                    self.data_path.latch_addr(specific, )  # + shift
-                else:
-                    self.data_path.latch_addr()  # addr x DataWord
+            case Opcode.STORE:
+                self.data_path.latch_addr(Opcode.STORE,  int(instr) & ADDRMASK)
                 self.data_path.sig_write()
             case Opcode.CALL:
                 self.data_path.acc = self.icounter  # direct wire on scheme
+                # Pushing icounter on FStack
                 self.execute_stack_instruction(Opcode.FPUSH)
-                self.icounter = int(instr[1:])
+                self.icounter = int(instr[1:])  # Actual Jump
             case Opcode.JZ:
                 if self.data_path.zero_flag == 1:
                     self.icounter = int(instr[1:])
@@ -174,9 +173,9 @@ class ControlUnit:
             self.data_path.latch_acc(specific)
         elif specific == Opcode.RET:
             self.execute_stack_instruction(
-                Opcode.FPOP)
+                Opcode.FPOP)  # Ret addr -> Acc
             self.icounter = self.data_path.acc  # wire to controlunit from acc
-        elif specific == Opcode.CLEAR:  # Clear Acc
+        elif specific == Opcode.CLEAR:
             self.data_path.clear_acc()
         elif specific in {Opcode.ADD, Opcode.SUB, Opcode.MOD}:  # Arith
             self.execute_arith_instruction(specific)

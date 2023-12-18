@@ -1,8 +1,9 @@
 # Data word size
 from enum import Enum
 
-
-word: int = 0x20
+# In bytes
+DATAWORD: int = 4 
+INSTRWORD: int = 2
 
 # Offset by 256 words
 anon_offset: int = 0x100
