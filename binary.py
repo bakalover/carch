@@ -73,20 +73,20 @@ def bin2op_no_arg(bin_code: str):
         "17": Opcode.ZERO,
         "18": Opcode.RET,
         "19": Opcode.CLEAR,
-        "1A": Opcode.ADD,
-        "1B": Opcode.SUB,
-        "1C": Opcode.READ,
-        "1D": Opcode.PRINT,
-        "1E": Opcode.INCESTACK,
-        "1F": Opcode.MOD,
+        "1a": Opcode.ADD,
+        "1b": Opcode.SUB,
+        "1c": Opcode.READ,
+        "1d": Opcode.PRINT,
+        "1e": Opcode.INCESTACK,
+        "1f": Opcode.MOD,
     }.get(bin_code)
 
 
 def bin2op_with_arg(bin_code: str):
     return {
-        "A": Opcode.LOAD,
-        "B": Opcode.STORE,
-        "C": Opcode.CALL,
-        "E": Opcode.JZ,
-        "F": Opcode.JMP,
+        "a": Opcode.LOAD,
+        "b": Opcode.STORE,
+        "c": Opcode.CALL,
+        "e": Opcode.JZ,
+        "f": Opcode.JMP,
     }.get(bin_code)

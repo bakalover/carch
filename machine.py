@@ -50,14 +50,14 @@ class DataPath:
 
     def latch_addr(self, sel: Opcode, addr: int = 0):
         if sel == Opcode.FPUSH:
-            self.data_address = self.fstack_ptr
             self.fstack_ptr -= 1
+            self.data_address = self.fstack_ptr
         elif sel == Opcode.FPOP:
             self.data_address = self.fstack_ptr
             self.fstack_ptr += 1
         elif sel == Opcode.EPUSH:
+            self.estack_ptr -= 1
             self.data_address = self.estack_ptr
-            self.fstack_ptr -= 1
         elif sel == Opcode.EPOP:
             self.data_address = self.estack_ptr
             self.estack_ptr += 1
@@ -68,6 +68,8 @@ class DataPath:
                 self.data_address = self.fstack_ptr + (addr & OFFSETMASK)
             elif addr & STACKMASK == ESTACKMASK:
                 self.data_address = self.estack_ptr + (addr & OFFSETMASK)
+            else:
+                self.data_address = addr & OFFSETMASK
 
     def sig_write(self, io: bool = False):
         if io:
@@ -136,30 +138,34 @@ class ControlUnit:
 
         if instr[0] == "1":
             self.execute_non_arg_instruction(instr)
+            self.tick()  # No internal changing of icounter
         else:
             self.execute_arg_instruction(instr)
 
-        self.tick()
-
     def execute_arg_instruction(self, instr: str):
-        specific = bin2op_with_arg(instr)
+        specific = bin2op_with_arg(instr[:1])
         match specific:
             case Opcode.LOAD:
-                self.data_path.latch_addr(Opcode.LOAD,  int(instr) & ADDRMASK)
+                self.data_path.latch_addr(
+                    Opcode.LOAD,  int(instr, 16) & ADDRMASK)
                 self.data_path.latch_acc()
+                self.tick()
             case Opcode.STORE:
-                self.data_path.latch_addr(Opcode.STORE,  int(instr) & ADDRMASK)
+                self.data_path.latch_addr(Opcode.STORE,  int(instr, 16) & ADDRMASK)
                 self.data_path.sig_write()
+                self.tick()
             case Opcode.CALL:
                 self.data_path.acc = self.icounter  # direct wire on scheme
                 # Pushing icounter on FStack
                 self.execute_stack_instruction(Opcode.FPUSH)
-                self.icounter = int(instr[1:])  # Actual Jump
+                self.icounter = int(instr[1:], 16)  # Actual Jump
             case Opcode.JZ:
                 if self.data_path.zero_flag == 1:
-                    self.icounter = int(instr[1:])
+                    self.icounter = int(instr[1:], 16)
+                else:
+                    self.tick()
             case Opcode.JMP:
-                self.icounter = int(instr[1:])
+                self.icounter = int(instr[1:], 16)
 
     def execute_non_arg_instruction(self, instr: str):
         specific = bin2op_no_arg(instr[:2])
