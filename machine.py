@@ -1,3 +1,4 @@
+from pprint import pprint
 import sys
 from typing import List
 from binary import bin2op_no_arg, bin2op_with_arg
@@ -151,7 +152,8 @@ class ControlUnit:
                 self.data_path.latch_acc()
                 self.tick()
             case Opcode.STORE:
-                self.data_path.latch_addr(Opcode.STORE,  int(instr, 16) & ADDRMASK)
+                self.data_path.latch_addr(
+                    Opcode.STORE,  int(instr, 16) & ADDRMASK)
                 self.data_path.sig_write()
                 self.tick()
             case Opcode.CALL:
