@@ -195,6 +195,7 @@ class ControlUnit:
         elif specific == Opcode.ZERO:
             self.data_path.latch_acc(specific)
         elif specific == Opcode.RET:
+            print(int.from_bytes(self.data_path.data[0:DATAWORD], 'big'))
             self.execute_stack_instruction(
                 Opcode.FPOP)  # Ret addr -> Acc
             self.icounter = self.data_path.acc  # wire to controlunit from acc

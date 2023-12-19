@@ -158,8 +158,8 @@ def construct(s_exp: List[str] | str, ctx: str | None = None) -> bool | None:
             is_str = False
             for exp in s_exp[1]:
                 is_str = construct(exp, ctx)
-            # Cracket (las s-exp stores ret on estack that will never get used)
-            add_instr(Opcode.EPOP)
+                # Each poping hense last one will be s-exp ret, otherwise -> estack leak
+                add_instr(Opcode.EPOP)
             add_instr(Opcode.JMP, jmp_stack.pop())
             for i in range(len(breaks)):
                 instr[breaks[i]][1] = icounter
@@ -174,6 +174,7 @@ def construct(s_exp: List[str] | str, ctx: str | None = None) -> bool | None:
             return is_str
 
         case "nop":
+            add_instr(Opcode.EPUSH) # Imitating s-exp
             add_instr(Opcode.NOP)  # Get out of loop
             return None
 
