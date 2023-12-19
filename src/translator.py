@@ -22,9 +22,7 @@ data = {Data.Named: {}, Data.Anon: {}}
 instr = {}
 
 
-def add_instr(instruction: Opcode,
-              mem:  Data | str | int | None = None,
-              shift: int = 0):
+def add_instr(instruction: Opcode, mem: Data | str | int | None = None, shift: int = 0):
     global icounter
     instr[icounter] = [instruction, mem, shift]
     icounter += 1
@@ -35,14 +33,12 @@ def construct(s_exp: list[str] | str, ctx: str | None = None) -> bool | None:
     global icounter, jmp_stack, acounter, ncounter, breaks
 
     match s_exp[0]:
-
         case "define":
             return define_var(list[str](s_exp))
 
         case "set":
             assert len(s_exp) == 3, "Invalid var modifying!"
-            assert data[Data.Named].get(
-                s_exp[1]) is not None, "Non-existing var!"
+            assert data[Data.Named].get(s_exp[1]) is not None, "Non-existing var!"
             is_str = construct(s_exp[2], ctx)
             add_instr(Opcode.EPOP)
             add_instr(Opcode.STORE, s_exp[1])
@@ -59,8 +55,7 @@ def construct(s_exp: list[str] | str, ctx: str | None = None) -> bool | None:
 
         case "fucall":
             assert len(s_exp) == 3, "Invalid function calling syntax!"
-            assert functions.get(
-                s_exp[1]) is not None, "Non-existing/visible funtion!"
+            assert functions.get(s_exp[1]) is not None, "Non-existing/visible funtion!"
             construct(s_exp[2], ctx)
             add_instr(Opcode.EPOP)  # From one stack
             add_instr(Opcode.FPUSH)  # to another
@@ -130,8 +125,8 @@ def construct(s_exp: list[str] | str, ctx: str | None = None) -> bool | None:
             add_instr(Opcode.SUB)  # acc = acc - [estack]
             add_instr(Opcode.ZERO)  # Loads zero flag
             add_instr(Opcode.STORE, Data.EStack)
-            assert (not is_str1), "Can't compare with strings/Nops!"
-            assert (not is_str2), "Can't compare with strings/Nops!"
+            assert not is_str1, "Can't compare with strings/Nops!"
+            assert not is_str2, "Can't compare with strings/Nops!"
             return False
 
         case "loop":
@@ -165,8 +160,8 @@ def construct(s_exp: list[str] | str, ctx: str | None = None) -> bool | None:
             add_instr(Opcode.EPOP)
             add_instr(Opcode.ADD)  # acc = acc + [estack]
             add_instr(Opcode.STORE, Data.EStack)
-            assert (not is_str1), "Can't add to string!"
-            assert (not is_str2), "Can't add to string!"
+            assert not is_str1, "Can't add to string!"
+            assert not is_str2, "Can't add to string!"
             return False
 
         case "%":
@@ -176,8 +171,8 @@ def construct(s_exp: list[str] | str, ctx: str | None = None) -> bool | None:
             add_instr(Opcode.EPOP)
             add_instr(Opcode.MOD)  # acc = acc % [estack]
             add_instr(Opcode.STORE, Data.EStack)
-            assert (not is_str1), "Strings!"
-            assert (not is_str2), "Strings!"
+            assert not is_str1, "Strings!"
+            assert not is_str2, "Strings!"
             return False
 
         case _:  # Constants or vars to Load
@@ -232,8 +227,7 @@ def vars_construct(s_exp: str, ctx):
 
     # Var to Load
     if ctx is None:
-        assert data[Data.Named].get(
-            s_exp) is not None, 'Non-existing var: "{}"!'.format(s_exp)
+        assert data[Data.Named].get(s_exp) is not None, 'Non-existing var: "{}"!'.format(s_exp)
         add_instr(Opcode.LOAD, s_exp)
         add_instr(Opcode.EPUSH)
         # returning flag "is it string"

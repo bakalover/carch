@@ -5,7 +5,6 @@ from isa import Opcode
 
 
 def binary_transform(instructions, data):
-
     with open("instructions", "wb") as file:
         file.write(b"\x00" * INSTRWORD * 1024)
         file.seek(0)
@@ -21,8 +20,7 @@ def binary_transform(instructions, data):
                 case "B":
                     dump_store(mem, to_dump, shift, file, data)
                 case _:
-                    file.write((int(to_dump, 16) | mem).to_bytes(
-                        INSTRWORD, "big"))
+                    file.write((int(to_dump, 16) | mem).to_bytes(INSTRWORD, "big"))
 
     with open("data", "wb") as file:
         file.write(b"\x00" * DATAWORD * 1024)
@@ -39,37 +37,28 @@ def binary_transform(instructions, data):
 
 def dump_load(mem, to_dump: str, shift: int, file: BufferedWriter, data):
     if mem == Data.EStack:
-        file.write(
-            (int(to_dump, 16) | shift | 0x0400).to_bytes(INSTRWORD, "big"))
+        file.write((int(to_dump, 16) | shift | 0x0400).to_bytes(INSTRWORD, "big"))
     elif mem == Data.FStack:
-        file.write(
-            (int(to_dump, 16) | shift | 0x0800).to_bytes(INSTRWORD, "big"))
+        file.write((int(to_dump, 16) | shift | 0x0800).to_bytes(INSTRWORD, "big"))
     elif mem == Data.Ar:
-        file.write(
-            (int(to_dump, 16) | shift | 0x0C00).to_bytes(INSTRWORD, "big"))
+        file.write((int(to_dump, 16) | shift | 0x0C00).to_bytes(INSTRWORD, "big"))
     elif isinstance(mem, str):
         addr = data[Data.Named].get(mem)[0]
-        file.write(
-            (int(to_dump, 16) | addr).to_bytes(INSTRWORD, "big"))
+        file.write((int(to_dump, 16) | addr).to_bytes(INSTRWORD, "big"))
     else:
-        file.write(
-            (int(to_dump, 16) | mem).to_bytes(INSTRWORD, "big"))
+        file.write((int(to_dump, 16) | mem).to_bytes(INSTRWORD, "big"))
 
 
 def dump_store(mem, to_dump: str, shift: int, file: BufferedWriter, data):
     if mem == Data.EStack:
-        file.write(
-            (int(to_dump, 16) | shift | 0x0400).to_bytes(INSTRWORD, "big"))
+        file.write((int(to_dump, 16) | shift | 0x0400).to_bytes(INSTRWORD, "big"))
     elif mem == Data.FStack:
-        file.write(
-            (int(to_dump, 16) | shift | 0x0800).to_bytes(INSTRWORD, "big"))
+        file.write((int(to_dump, 16) | shift | 0x0800).to_bytes(INSTRWORD, "big"))
     elif mem == Data.Ar:
-        file.write(
-            (int(to_dump, 16) | shift | 0x0C00).to_bytes(INSTRWORD, "big"))
+        file.write((int(to_dump, 16) | shift | 0x0C00).to_bytes(INSTRWORD, "big"))
     else:
         addr = data[Data.Named].get(mem)[0]
-        file.write(
-            (int(to_dump, 16) | addr).to_bytes(INSTRWORD, "big"))
+        file.write((int(to_dump, 16) | addr).to_bytes(INSTRWORD, "big"))
 
 
 def bin2op_no_arg(bin_code: str):
