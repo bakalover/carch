@@ -37,23 +37,7 @@ def construct(s_exp: list[str] | str, ctx: str | None = None) -> bool | None:
     match s_exp[0]:
 
         case "define":
-            assert len(s_exp) == 3, "Invalid var definition!"
-
-            # String def
-            if s_exp[2].startswith('"') and s_exp[2].endswith('"'):
-                data[Data.Named][s_exp[1]] = [ncounter, True, acounter]
-                ncounter += 1
-                for c in s_exp[2][1:-1]:
-                    data[Data.Anon][acounter] = c
-                    acounter += 1
-                data[Data.Anon][acounter] = 0
-                acounter += 1
-
-            # Number def
-            else:
-                data[Data.Named][s_exp[1]] = [ncounter, False, int(s_exp[2])]
-                ncounter += 1
-            return None
+            return define_var(list[str](s_exp))
 
         case "set":
             assert len(s_exp) == 3, "Invalid var modifying!"
@@ -198,46 +182,71 @@ def construct(s_exp: list[str] | str, ctx: str | None = None) -> bool | None:
 
         case _:  # Constants or vars to Load
             s_exp = str(s_exp)
+            return vars_construct(s_exp, ctx)
 
-            # Number const
-            if s_exp.isnumeric():
-                data[Data.Anon][acounter] = int(s_exp)
-                add_instr(Opcode.LOAD, acounter)
-                acounter += 1
-                add_instr(Opcode.EPUSH)
-                return False
 
-            # String const
-            if s_exp.startswith('"') and s_exp.endswith('"'):
-                add_instr(Opcode.LOAD, acounter)
-                add_instr(Opcode.EPUSH)
-                # Giga chad pointer to next
-                data[Data.Anon][acounter] = acounter + 1
-                acounter += 1
-                for c in s_exp[1:-1]:
-                    data[Data.Anon][acounter] = c
-                    acounter += 1
-                data[Data.Anon][acounter] = 0
-                acounter += 1
-                return True
+def define_var(s_exp: list[str]) -> None:
+    global acounter, ncounter
+    assert len(s_exp) == 3, "Invalid var definition!"
 
-            # Var to Load
-            if ctx is None:
-                assert data[Data.Named].get(
-                    s_exp) is not None, 'Non-existing var: "{}"!'.format(s_exp)
-                add_instr(Opcode.LOAD, s_exp)
-                add_instr(Opcode.EPUSH)
-                # returning flag "is it string"
-                return data[Data.Named][s_exp][1]
-            if data[Data.Named].get(s_exp) is not None:
-                add_instr(Opcode.LOAD, s_exp)
-                add_instr(Opcode.EPUSH)
-                return data[Data.Named][s_exp][1]
-            if functions[ctx][1] == s_exp:
-                add_instr(Opcode.LOAD, Data.FStack, 1)
-                add_instr(Opcode.EPUSH)
-                return False  # Functions currently support only numbers (
-            return None
+    # String def
+    if s_exp[2].startswith('"') and s_exp[2].endswith('"'):
+        data[Data.Named][s_exp[1]] = [ncounter, True, acounter]
+        ncounter += 1
+        for c in s_exp[2][1:-1]:
+            data[Data.Anon][acounter] = c
+            acounter += 1
+        data[Data.Anon][acounter] = 0
+        acounter += 1
+
+    # Number def
+    else:
+        data[Data.Named][s_exp[1]] = [ncounter, False, int(s_exp[2])]
+        ncounter += 1
+    return
+
+
+def vars_construct(s_exp: str, ctx):
+    global acounter
+    # Number const
+    if s_exp.isnumeric():
+        data[Data.Anon][acounter] = int(s_exp)
+        add_instr(Opcode.LOAD, acounter)
+        acounter += 1
+        add_instr(Opcode.EPUSH)
+        return False
+
+    # String const
+    if s_exp.startswith('"') and s_exp.endswith('"'):
+        add_instr(Opcode.LOAD, acounter)
+        add_instr(Opcode.EPUSH)
+        # Giga chad pointer to next
+        data[Data.Anon][acounter] = acounter + 1
+        acounter += 1
+        for c in s_exp[1:-1]:
+            data[Data.Anon][acounter] = c
+            acounter += 1
+        data[Data.Anon][acounter] = 0
+        acounter += 1
+        return True
+
+    # Var to Load
+    if ctx is None:
+        assert data[Data.Named].get(
+            s_exp) is not None, 'Non-existing var: "{}"!'.format(s_exp)
+        add_instr(Opcode.LOAD, s_exp)
+        add_instr(Opcode.EPUSH)
+        # returning flag "is it string"
+        return data[Data.Named][s_exp][1]
+    if data[Data.Named].get(s_exp) is not None:
+        add_instr(Opcode.LOAD, s_exp)
+        add_instr(Opcode.EPUSH)
+        return data[Data.Named][s_exp][1]
+    if functions[ctx][1] == s_exp:
+        add_instr(Opcode.LOAD, Data.FStack, 1)
+        add_instr(Opcode.EPUSH)
+        return False  # Functions currently support only numbers (
+    return None
 
 
 def translate(source: str):
