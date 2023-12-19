@@ -75,20 +75,8 @@ class DataPath:
             else:
                 self.data_address = addr & OFFSETMASK
 
-    def sig_write(self, io: bool = False):
-        if io:
-            assert len(self.input_buffer) != 0, "EOF!"
-            symb = self.input_buffer.pop(0)
-            symb_code: int
-            if symb == '\n':  # Crutch
-                symb_code = ord(str(0)) - 48
-            else:
-                symb_code = ord(symb)
-            assert -128 <= symb_code <= 127, "Not ASCII symbol!"
-            self.acc = symb_code
-            self.mem_store(symb_code)
-        else:
-            self.mem_store(self.acc)
+    def sig_write(self):
+        self.mem_store(self.acc)
 
     def latch_acc(self, sel: Opcode | None = None):  # None == from memory
         if sel == Opcode.ZERO:
@@ -121,7 +109,21 @@ class DataPath:
         self.setup_zero_flag()
 
     def sig_out(self):
-        self.output_buffer.append(chr(self.acc))
+        if chr(self.acc) == '/':
+            self.output_buffer.append(' ')
+        else:
+            self.output_buffer.append(chr(self.acc))
+
+    def sig_read(self):
+        assert len(self.input_buffer) != 0, "EOF!"
+        symb = self.input_buffer.pop(0)
+        symb_code: int
+        if symb == '\n':  # Crutch
+            symb_code = ord(str(0)) - 48
+        else:
+            symb_code = ord(symb)
+        assert -128 <= symb_code <= 127, "Not ASCII symbol!"
+        self.acc = symb_code
 
     def sig_acc_to_addr(self):
         self.data_address = self.acc
@@ -228,7 +230,8 @@ class ControlUnit:
         if instr == Opcode.PRINT:
             self.data_path.sig_out()
         else:
-            self.data_path.sig_write(io=True)
+            self.data_path.sig_read()
+            self.data_path.sig_write()
 
 
 def simulation(instr: bytes, data: bytearray, input_buf: List[str]):

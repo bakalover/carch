@@ -1,2 +1,36 @@
-(define x "asd")
+(define ans 2520)
+(define i 11)
+(defun is_ans (n) (
+        (
+            loop (
+                (if (== 0 (% n i)) (nop) (break 0))
+                (if (== i 20) (break 1) (nop))
+                (set i (+ i 1))
+            )
+        )
+    )
+)
+(   
+    loop (
+        (if (fucall is_ans ans) (break 0) (set ans (+ ans 2520)))
+        (set i 11)
+    )
+)
+///////////////////////////
+(define x 2)
+(define y 2)
+(print (if (== x y) "TRazsdsdfg" "F"))
+
+////////////////// Hello, User!
+(define x "Hello/")
+(define name "-----")
+(define congrat "!")
+(read name)
 (print x)
+(print name)
+(print congrat)
+
+///////////// Cat
+(define cat "")
+(read cat)
+(print cat)
