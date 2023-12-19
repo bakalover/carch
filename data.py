@@ -14,4 +14,4 @@ class Data(Enum):
     Anon = 2,
     FStack = 3,
     EStack = 4,
-    Acc = 5,
+    Ar = 5

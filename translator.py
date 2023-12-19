@@ -98,8 +98,10 @@ def construct(s_exp: List[str] | str, ctx: str | None = None) -> bool | None:
                 add_instr(Opcode.PRINT)
             else:
                 jmp_stack.append(icounter)
+                # After fetching => (acc -> ar)
                 add_instr(Opcode.LOAD, Data.EStack)
-                add_instr(Opcode.LOAD, Data.Acc)
+                # Load by addr that already in Ar
+                add_instr(Opcode.LOAD, Data.Ar)
                 add_instr(Opcode.CMP)
                 add_instr(Opcode.JZ, icounter + 4)
                 add_instr(Opcode.PRINT)
@@ -112,10 +114,12 @@ def construct(s_exp: List[str] | str, ctx: str | None = None) -> bool | None:
             is_str = construct(s_exp[1])
             assert is_str, "Reading is supported only for strings!"
             jmp_stack.append(icounter)
+            # Only for [eptr] -> acc -> ar purpose
+            add_instr(Opcode.LOAD, Data.EStack)
             add_instr(Opcode.READ)
             add_instr(Opcode.CMP)
             add_instr(Opcode.JZ, icounter + 4)
-            add_instr(Opcode.STORE, Data.EStack)
+            add_instr(Opcode.STORE, Data.Ar)  # Store by addr in addr reg
             add_instr(Opcode.INCESTACK)
             add_instr(Opcode.JMP, jmp_stack.pop())
             add_instr(Opcode.CLEAR)
@@ -247,9 +251,9 @@ def translate(source: str):
             is_main = True
             instr[0][1] = icounter
             construct(top_exp, None)
-            add_instr(Opcode.HALT)
         else:
             construct(top_exp, None)
+    add_instr(Opcode.HALT)
 
 
 def main(source_path):

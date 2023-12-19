@@ -10,7 +10,7 @@ OFFSETMASK: int = 0x03FF
 TYPEMASK: int = 0x0F00
 FSTACKMASK: int = 0x0800
 ESTACKMASK: int = 0x0400
-ACCMASK: int = 0x0C00
+ARMASK: int = 0x0C00
 
 
 class DataPath:
@@ -70,16 +70,22 @@ class DataPath:
                 self.data_address = self.fstack_ptr + (addr & OFFSETMASK)
             elif addr & TYPEMASK == ESTACKMASK:
                 self.data_address = self.estack_ptr + (addr & OFFSETMASK)
-            elif addr & TYPEMASK == ACCMASK:
-                self.data_address = self.acc
+            elif addr & TYPEMASK == ARMASK:
+                0  # Nop
             else:
                 self.data_address = addr & OFFSETMASK
 
     def sig_write(self, io: bool = False):
         if io:
-            assert len(self.input_buffer) == 0, "EOF!"
-            symb_code = ord(self.input_buffer.pop(0))
+            assert len(self.input_buffer) != 0, "EOF!"
+            symb = self.input_buffer.pop(0)
+            symb_code: int
+            if symb == '\n':  # Crutch
+                symb_code = ord(str(0)) - 48
+            else:
+                symb_code = ord(symb)
             assert -128 <= symb_code <= 127, "Not ASCII symbol!"
+            self.acc = symb_code
             self.mem_store(symb_code)
         else:
             self.mem_store(self.acc)
@@ -117,6 +123,9 @@ class DataPath:
     def sig_out(self):
         self.output_buffer.append(chr(self.acc))
 
+    def sig_acc_to_addr(self):
+        self.data_address = self.acc
+
 
 class ControlUnit:
 
@@ -153,6 +162,7 @@ class ControlUnit:
                 self.data_path.latch_addr(
                     Opcode.LOAD,  int(instr, 16) & ADDRMASK)
                 self.data_path.latch_acc()
+                self.data_path.sig_acc_to_addr()
                 self.tick()
             case Opcode.STORE:
                 self.data_path.latch_addr(
