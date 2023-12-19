@@ -1,3 +1,20 @@
-(define cat "")
-(read cat)
-(print cat)
+(define ans 2520)
+(define i 11)
+(defun is_ans (n) (
+        (
+            loop (
+                (if (== 0 (% n i)) (nop) (break 0))
+                (if (== i 20) (break 1) (nop))
+                (set i (+ i 1))
+            )
+        )
+    )
+)
+(   
+    loop (
+        (if (fucall is_ans ans) (break 0) (set ans (+ ans 2520)))
+        (set i 11)
+    )
+)
+(print (if (== ans 232792560) "T" "F"))
+(print (if (== ans 232792561) "T" "F"))

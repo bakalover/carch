@@ -1,9 +1,9 @@
-from binary import binary_transform
-from data import Data, anon_offset, DATAWORD
+from src.binary import binary_transform
+from src.data import Data, anon_offset, DATAWORD
 import sys
 from typing import List, Literal
-from isa import Opcode
-from parsing import convert_to_lists, to_tokens
+from src.isa import Opcode
+from src.parsing import convert_to_lists, to_tokens
 
 jmp_stack = []
 breaks = []

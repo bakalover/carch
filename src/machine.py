@@ -1,9 +1,9 @@
 from pprint import pprint
 import sys
 from typing import List
-from binary import bin2op_no_arg, bin2op_with_arg
-from isa import Opcode
-from data import INSTRWORD, DATAWORD
+from src.binary import bin2op_no_arg, bin2op_with_arg
+from src.isa import Opcode
+from src.data import INSTRWORD, DATAWORD
 
 ADDRMASK: int = 0x0FFF
 OFFSETMASK: int = 0x03FF

@@ -1,6 +1,6 @@
 from pprint import pprint
-from data import Data, DATAWORD, INSTRWORD, anon_offset
-from isa import Opcode
+from src.data import Data, DATAWORD, INSTRWORD, anon_offset
+from src.isa import Opcode
 
 
 def binary_transform(instructions, data):
