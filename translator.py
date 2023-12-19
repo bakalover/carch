@@ -235,7 +235,7 @@ def construct(s_exp: List[str] | str, ctx: str | None = None) -> bool | None:
                     add_instr(Opcode.EPUSH)
                     return data[Data.Named][s_exp][1]
                 elif functions[ctx][1] == s_exp:
-                    add_instr(Opcode.LOAD, Data.FStack, DATAWORD)
+                    add_instr(Opcode.LOAD, Data.FStack, 1)
                     add_instr(Opcode.EPUSH)
                     return False  # Functions currently support only numbers (
                 else:
