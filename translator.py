@@ -21,7 +21,7 @@ instr = {}
 
 
 def add_instr(instruction: Opcode,
-              mem:  Literal[Data.FStack] | Literal[Data.EStack] | str | int | None = None,
+              mem:  Data | str | int | None = None,
               shift: int = 0):
     global icounter
     instr[icounter] = [instruction, mem, shift]
@@ -99,6 +99,7 @@ def construct(s_exp: List[str] | str, ctx: str | None = None) -> bool | None:
             else:
                 jmp_stack.append(icounter)
                 add_instr(Opcode.LOAD, Data.EStack)
+                add_instr(Opcode.LOAD, Data.Acc)
                 add_instr(Opcode.CMP)
                 add_instr(Opcode.JZ, icounter + 4)
                 add_instr(Opcode.PRINT)

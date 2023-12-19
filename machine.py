@@ -7,9 +7,10 @@ from data import INSTRWORD, DATAWORD
 
 ADDRMASK: int = 0x0FFF
 OFFSETMASK: int = 0x03FF
-STACKMASK: int = 0x0F00
+TYPEMASK: int = 0x0F00
 FSTACKMASK: int = 0x0800
 ESTACKMASK: int = 0x0400
+ACCMASK: int = 0x0C00
 
 
 class DataPath:
@@ -65,10 +66,12 @@ class DataPath:
         elif sel in {Opcode.ADD, Opcode.SUB, Opcode.MOD, Opcode.INCESTACK}:
             self.data_address = self.estack_ptr
         elif sel in {Opcode.LOAD, Opcode.STORE}:
-            if addr & STACKMASK == FSTACKMASK:
+            if addr & TYPEMASK == FSTACKMASK:
                 self.data_address = self.fstack_ptr + (addr & OFFSETMASK)
-            elif addr & STACKMASK == ESTACKMASK:
+            elif addr & TYPEMASK == ESTACKMASK:
                 self.data_address = self.estack_ptr + (addr & OFFSETMASK)
+            elif addr & TYPEMASK == ACCMASK:
+                self.data_address = self.acc
             else:
                 self.data_address = addr & OFFSETMASK
 
@@ -76,7 +79,7 @@ class DataPath:
         if io:
             assert len(self.input_buffer) == 0, "EOF!"
             symb_code = ord(self.input_buffer.pop(0))
-            assert -128 <= symb_code <= 127, "Not ASCII symbol"
+            assert -128 <= symb_code <= 127, "Not ASCII symbol!"
             self.mem_store(symb_code)
         else:
             self.mem_store(self.acc)
@@ -227,6 +230,7 @@ def simulation(instr: bytes, data: bytearray, input_buf: List[str]):
         while True:
             control_unit.execute_instruction()
     except StopIteration:
+        print(data_path.output_buffer)
         pass
 
 

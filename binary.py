@@ -25,6 +25,9 @@ def binary_transform(instructions, data):
                     elif mem == Data.FStack:
                         file.write(
                             (int(to_dump, 16) | shift | 0x0800).to_bytes(INSTRWORD, 'big'))
+                    elif mem == Data.Acc:
+                        file.write(
+                            (int(to_dump, 16) | shift | 0x0C00).to_bytes(INSTRWORD, 'big'))
                     elif isinstance(mem, str):
                         addr = data[Data.Named].get(mem)[0]
                         file.write(
@@ -40,6 +43,9 @@ def binary_transform(instructions, data):
                     elif mem == Data.FStack:
                         file.write(
                             int(to_dump, 16) | shift | 0x0800).to_bytes(INSTRWORD, 'big')
+                    elif mem == Data.Acc:
+                        file.write(
+                            (int(to_dump, 16) | shift | 0x0C00).to_bytes(INSTRWORD, 'big'))
                     else:
                         addr = data[Data.Named].get(mem)[0]
                         file.write(
