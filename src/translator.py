@@ -1,9 +1,11 @@
-from src.binary import binary_transform
-from src.data import Data, anon_offset, DATAWORD
+from __future__ import annotations
+
 import sys
-from typing import List, Literal
-from src.isa import Opcode
-from src.parsing import convert_to_lists, to_tokens
+
+from binary import binary_transform
+from data import Data, anon_offset
+from isa import Opcode
+from parsing import convert_to_lists, to_tokens
 
 jmp_stack = []
 breaks = []
@@ -29,15 +31,8 @@ def add_instr(instruction: Opcode,
 
 
 # bool for string control
-def construct(s_exp: List[str] | str, ctx: str | None = None) -> bool | None:
+def construct(s_exp: list[str] | str, ctx: str | None = None) -> bool | None:
     global icounter, jmp_stack, acounter, ncounter, breaks
-
-    check_exp: str
-
-    # if isinstance(s_exp, str):
-    #     check_exp = s_exp
-    # else:
-    #     check_exp = s_exp[0]
 
     match s_exp[0]:
 
@@ -45,7 +40,7 @@ def construct(s_exp: List[str] | str, ctx: str | None = None) -> bool | None:
             assert len(s_exp) == 3, "Invalid var definition!"
 
             # String def
-            if s_exp[2].startswith("\"") and s_exp[2].endswith("\""):
+            if s_exp[2].startswith('"') and s_exp[2].endswith('"'):
                 data[Data.Named][s_exp[1]] = [ncounter, True, acounter]
                 ncounter += 1
                 for c in s_exp[2][1:-1]:
@@ -62,7 +57,8 @@ def construct(s_exp: List[str] | str, ctx: str | None = None) -> bool | None:
 
         case "set":
             assert len(s_exp) == 3, "Invalid var modifying!"
-            assert data[Data.Named].get(s_exp[1]) != None, "Non-existing var!"
+            assert data[Data.Named].get(
+                s_exp[1]) is not None, "Non-existing var!"
             is_str = construct(s_exp[2], ctx)
             add_instr(Opcode.EPOP)
             add_instr(Opcode.STORE, s_exp[1])
@@ -80,7 +76,7 @@ def construct(s_exp: List[str] | str, ctx: str | None = None) -> bool | None:
         case "fucall":
             assert len(s_exp) == 3, "Invalid function calling syntax!"
             assert functions.get(
-                s_exp[1]) != None, "Non-existing/visible funtion!"
+                s_exp[1]) is not None, "Non-existing/visible funtion!"
             construct(s_exp[2], ctx)
             add_instr(Opcode.EPOP)  # From one stack
             add_instr(Opcode.FPUSH)  # to another
@@ -89,6 +85,7 @@ def construct(s_exp: List[str] | str, ctx: str | None = None) -> bool | None:
             # After calling function result on EStack -> fun as s-exp
             add_instr(Opcode.CALL, functions[s_exp[1]][0])
             add_instr(Opcode.FPOP)  # Clearing function argument
+            return None
 
         case "print":
             assert len(s_exp) == 2, "Invalid printing syntax!"
@@ -108,6 +105,7 @@ def construct(s_exp: List[str] | str, ctx: str | None = None) -> bool | None:
                 add_instr(Opcode.INCESTACK)
                 add_instr(Opcode.JMP, jmp_stack.pop())
                 add_instr(Opcode.EPOP)  # Clearing dirty estack top
+            return None
 
         case "read":
             assert len(s_exp) == 2, "Invalid read syntax!"
@@ -125,6 +123,7 @@ def construct(s_exp: List[str] | str, ctx: str | None = None) -> bool | None:
             add_instr(Opcode.CLEAR)
             add_instr(Opcode.STORE, Data.EStack)
             add_instr(Opcode.EPOP)
+            return None
 
         case "if":
             construct(s_exp[1], ctx)
@@ -138,8 +137,6 @@ def construct(s_exp: List[str] | str, ctx: str | None = None) -> bool | None:
             add_instr(Opcode.JMP, None)
             is_str2 = construct(s_exp[3], ctx)
             instr[jmp_stack.pop()][1] = icounter
-            assert (is_str1 == is_str2) or (is_str2 == None) or (
-                is_str1 == None), "Invalid if-branch s-exp ret result!"
             return is_str1
 
         case "==":
@@ -149,8 +146,8 @@ def construct(s_exp: List[str] | str, ctx: str | None = None) -> bool | None:
             add_instr(Opcode.SUB)  # acc = acc - [estack]
             add_instr(Opcode.ZERO)  # Loads zero flag
             add_instr(Opcode.STORE, Data.EStack)
-            assert (not is_str1) and (
-                not is_str2), "Can't compare with strings/Nops!"
+            assert (not is_str1), "Can't compare with strings/Nops!"
+            assert (not is_str2), "Can't compare with strings/Nops!"
             return False
 
         case "loop":
@@ -174,7 +171,7 @@ def construct(s_exp: List[str] | str, ctx: str | None = None) -> bool | None:
             return is_str
 
         case "nop":
-            add_instr(Opcode.EPUSH) # Imitating s-exp
+            add_instr(Opcode.EPUSH)  # Imitating s-exp
             add_instr(Opcode.NOP)  # Get out of loop
             return None
 
@@ -184,7 +181,8 @@ def construct(s_exp: List[str] | str, ctx: str | None = None) -> bool | None:
             add_instr(Opcode.EPOP)
             add_instr(Opcode.ADD)  # acc = acc + [estack]
             add_instr(Opcode.STORE, Data.EStack)
-            assert (not is_str1) and (not is_str2), "Can't add to string!"
+            assert (not is_str1), "Can't add to string!"
+            assert (not is_str2), "Can't add to string!"
             return False
 
         case "%":
@@ -194,7 +192,8 @@ def construct(s_exp: List[str] | str, ctx: str | None = None) -> bool | None:
             add_instr(Opcode.EPOP)
             add_instr(Opcode.MOD)  # acc = acc % [estack]
             add_instr(Opcode.STORE, Data.EStack)
-            assert (not is_str1) and (not is_str2), "Strings!"
+            assert (not is_str1), "Strings!"
+            assert (not is_str2), "Strings!"
             return False
 
         case _:  # Constants or vars to Load
@@ -209,7 +208,7 @@ def construct(s_exp: List[str] | str, ctx: str | None = None) -> bool | None:
                 return False
 
             # String const
-            elif s_exp.startswith("\"") and s_exp.endswith("\""):
+            if s_exp.startswith('"') and s_exp.endswith('"'):
                 add_instr(Opcode.LOAD, acounter)
                 add_instr(Opcode.EPUSH)
                 # Giga chad pointer to next
@@ -223,24 +222,22 @@ def construct(s_exp: List[str] | str, ctx: str | None = None) -> bool | None:
                 return True
 
             # Var to Load
-            else:
-                if ctx == None:
-                    assert data[Data.Named].get(
-                        s_exp) != None, "Non-existing var: \"{}\"!".format(s_exp)
-                    add_instr(Opcode.LOAD, s_exp)
-                    add_instr(Opcode.EPUSH)
-                    # returning flag "is it string"
-                    return data[Data.Named][s_exp][1]
-                elif data[Data.Named].get(s_exp) != None:
-                    add_instr(Opcode.LOAD, s_exp)
-                    add_instr(Opcode.EPUSH)
-                    return data[Data.Named][s_exp][1]
-                elif functions[ctx][1] == s_exp:
-                    add_instr(Opcode.LOAD, Data.FStack, 1)
-                    add_instr(Opcode.EPUSH)
-                    return False  # Functions currently support only numbers (
-                else:
-                    assert False, "Non-existing var: \"{}\"!".format(s_exp)
+            if ctx is None:
+                assert data[Data.Named].get(
+                    s_exp) is not None, 'Non-existing var: "{}"!'.format(s_exp)
+                add_instr(Opcode.LOAD, s_exp)
+                add_instr(Opcode.EPUSH)
+                # returning flag "is it string"
+                return data[Data.Named][s_exp][1]
+            if data[Data.Named].get(s_exp) is not None:
+                add_instr(Opcode.LOAD, s_exp)
+                add_instr(Opcode.EPUSH)
+                return data[Data.Named][s_exp][1]
+            if functions[ctx][1] == s_exp:
+                add_instr(Opcode.LOAD, Data.FStack, 1)
+                add_instr(Opcode.EPUSH)
+                return False  # Functions currently support only numbers (
+            return None
 
 
 def translate(source: str):

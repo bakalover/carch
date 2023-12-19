@@ -1,9 +1,10 @@
-from pprint import pprint
+from __future__ import annotations
+
 import sys
-from typing import List
-from src.binary import bin2op_no_arg, bin2op_with_arg
-from src.isa import Opcode
-from src.data import INSTRWORD, DATAWORD
+
+from binary import bin2op_no_arg, bin2op_with_arg
+from data import DATAWORD, INSTRWORD
+from isa import Opcode
 
 ADDRMASK: int = 0x0FFF
 OFFSETMASK: int = 0x03FF
@@ -22,10 +23,10 @@ class DataPath:
     fstack_ptr: int
     acc: int
     zero_flag: int
-    input_buffer: List[str]
-    output_buffer: List[str]
+    input_buffer: list[str]
+    output_buffer: list[str]
 
-    def __init__(self, data: bytearray, input_buffer: List[str]):
+    def __init__(self, data: bytearray, input_buffer: list[str]):
         self.data_memory_size = DATAWORD * 1024
         self.data = data
         self.data_address = 0
@@ -38,11 +39,11 @@ class DataPath:
 
     def mem_load(self) -> int:
         assert self.data_address+1 <= 1024, "Data memory border violation!"
-        return int.from_bytes(self.data[self.data_address*DATAWORD: (self.data_address+1)*DATAWORD], 'big')
+        return int.from_bytes(self.data[self.data_address*DATAWORD: (self.data_address+1)*DATAWORD], "big")
 
     def mem_store(self, val: int):
         self.data[self.data_address *
-                  DATAWORD: (self.data_address+1)*DATAWORD] = val.to_bytes(DATAWORD, 'big')
+                  DATAWORD: (self.data_address+1)*DATAWORD] = val.to_bytes(DATAWORD, "big")
 
     def latch_set_zero(self):
         if self.acc == 0:
@@ -51,6 +52,24 @@ class DataPath:
             self.zero_flag = 0
 
     def latch_addr(self, sel: Opcode, addr: int = 0):
+        if sel in {Opcode.FPUSH, Opcode.FPOP, Opcode.EPUSH, Opcode.EPOP}:
+            self.stack_addr_latch_logic(sel)
+        elif sel in {Opcode.ADD, Opcode.SUB, Opcode.MOD, Opcode.INCESTACK}:
+            self.data_address = self.estack_ptr
+        elif sel in {Opcode.LOAD, Opcode.STORE}:
+            self.load_store_addr_latch_logic(addr)
+
+    def load_store_addr_latch_logic(self, addr: int):
+        if addr & TYPEMASK == FSTACKMASK:
+            self.data_address = self.fstack_ptr + (addr & OFFSETMASK)
+        elif addr & TYPEMASK == ESTACKMASK:
+            self.data_address = self.estack_ptr + (addr & OFFSETMASK)
+        elif addr & TYPEMASK == ARMASK:
+            0  # Nop
+        else:
+            self.data_address = addr & OFFSETMASK
+
+    def stack_addr_latch_logic(self, sel: Opcode):
         if sel == Opcode.FPUSH:
             self.fstack_ptr -= 1
             self.data_address = self.fstack_ptr
@@ -63,17 +82,6 @@ class DataPath:
         elif sel == Opcode.EPOP:
             self.data_address = self.estack_ptr
             self.estack_ptr += 1
-        elif sel in {Opcode.ADD, Opcode.SUB, Opcode.MOD, Opcode.INCESTACK}:
-            self.data_address = self.estack_ptr
-        elif sel in {Opcode.LOAD, Opcode.STORE}:
-            if addr & TYPEMASK == FSTACKMASK:
-                self.data_address = self.fstack_ptr + (addr & OFFSETMASK)
-            elif addr & TYPEMASK == ESTACKMASK:
-                self.data_address = self.estack_ptr + (addr & OFFSETMASK)
-            elif addr & TYPEMASK == ARMASK:
-                0  # Nop
-            else:
-                self.data_address = addr & OFFSETMASK
 
     def sig_write(self):
         self.mem_store(self.acc)
@@ -109,8 +117,8 @@ class DataPath:
         self.setup_zero_flag()
 
     def sig_out(self):
-        if chr(self.acc) == '/':
-            self.output_buffer.append(' ')
+        if chr(self.acc) == "/":
+            self.output_buffer.append(" ")
         else:
             self.output_buffer.append(chr(self.acc))
 
@@ -118,7 +126,7 @@ class DataPath:
         assert len(self.input_buffer) != 0, "EOF!"
         symb = self.input_buffer.pop(0)
         symb_code: int
-        if symb == '\n':  # Crutch
+        if symb == "\n":  # Crutch
             symb_code = ord(str(0)) - 48
         else:
             symb_code = ord(symb)
@@ -186,25 +194,24 @@ class ControlUnit:
 
     def execute_non_arg_instruction(self, instr: str):
         specific = bin2op_no_arg(instr[:2])
-        if specific == Opcode.HALT:
-            raise StopIteration
-        elif specific == Opcode.CMP:
-            self.data_path.latch_set_zero()
-        elif specific in {Opcode.FPUSH, Opcode.FPOP, Opcode.EPUSH, Opcode.EPOP, Opcode.INCESTACK}:
+        if specific in {Opcode.CMP, Opcode.ZERO}:
+            self.execute_flag_instruction(specific)
+        elif specific in {Opcode.FPUSH, Opcode.FPOP, Opcode.EPUSH, Opcode.EPOP, Opcode.INCESTACK, Opcode.RET}:
             self.execute_stack_instruction(specific)
-        elif specific == Opcode.ZERO:
-            self.data_path.latch_acc(specific)
-        elif specific == Opcode.RET:
-            print(int.from_bytes(self.data_path.data[0:DATAWORD], 'big'))
-            self.execute_stack_instruction(
-                Opcode.FPOP)  # Ret addr -> Acc
-            self.icounter = self.data_path.acc  # wire to controlunit from acc
         elif specific == Opcode.CLEAR:
             self.data_path.clear_acc()
         elif specific in {Opcode.ADD, Opcode.SUB, Opcode.MOD}:  # Arith
             self.execute_arith_instruction(specific)
         elif specific in {Opcode.READ, Opcode.PRINT}:  # IO
             self.execute_io_instruction(specific)
+        if specific == Opcode.HALT:
+            raise StopIteration  # Actually Opcode.HALT
+
+    def execute_flag_instruction(self, specific: Opcode):
+        if specific == Opcode.CMP:
+            self.data_path.latch_set_zero()
+        elif specific == Opcode.ZERO:
+            self.data_path.latch_acc(specific)
 
     def execute_stack_instruction(self, instr: Opcode):
         self.data_path.latch_addr(instr)
@@ -216,6 +223,10 @@ class ControlUnit:
             self.data_path.latch_acc()
             self.data_path.acc_inc()
             self.data_path.sig_write()
+        elif instr == Opcode.RET:
+            self.execute_stack_instruction(
+                Opcode.FPOP)  # Ret addr -> Acc
+            self.icounter = self.data_path.acc  # wire to controlunit from acc
 
     def execute_arith_instruction(self, instr: Opcode):
         self.data_path.latch_addr(instr)  # Getting estack_ptr as addr
@@ -235,7 +246,7 @@ class ControlUnit:
             self.data_path.sig_write()
 
 
-def simulation(instr: bytes, data: bytearray, input_buf: List[str]):
+def simulation(instr: bytes, data: bytearray, input_buf: list[str]):
 
     data_path = DataPath(data, input_buf)
     control_unit = ControlUnit(instr, data_path)
@@ -263,6 +274,5 @@ def main(instr_file: str, data_file: str, input_file: str):
 
 
 if __name__ == "__main__":
-    # logging.getLogger().setLevel(logging.DEBUG)
     _, code_file, data_file, input_file = sys.argv
     main(code_file, data_file, input_file)
