@@ -4,7 +4,11 @@ in_source: |-
   (print cat)
 
 in_stdin: |-
-  akjsdhgdauilskdjdhakgajwyuadwhj81290309+++----
+  Narvalis$
+
+
+out_stdout: |-
+  ['N', 'a', 'r', 'v', 'a', 'l', 'i', 's']
 
 out_mnemonics: |-
   0 - 0xf001 - [<Opcode.JMP: '0xF000'>, 1, 0]

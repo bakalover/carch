@@ -1,14 +1,15 @@
 in_source: |-
   (define x "Hello/")
-  (define name "-----")
-  (define congrat "!")
+  (define name "")
   (read name)
   (print x)
   (print name)
-  (print congrat)
 
 in_stdin: |-
-  Narvalis098765432345678
+  Narvalis$
+
+out_stdout: |-
+  ['H', 'e', 'l', 'l', 'o', ' ', 'N', 'a', 'r', 'v', 'a', 'l', 'i', 's']
 
 out_mnemonics: |-
   0 - 0xf001 - [<Opcode.JMP: '0xF000'>, 1, 0]
@@ -44,15 +45,4 @@ out_mnemonics: |-
   30 - 0x1e00 - [<Opcode.INCESTACK: '0x1E00'>, None, 0]
   31 - 0xf019 - [<Opcode.JMP: '0xF000'>, 25, 0]
   32 - 0x1600 - [<Opcode.EPOP: '0x1600'>, None, 0]
-  33 - 0xa002 - [<Opcode.LOAD: '0xA000'>, 'congrat', 0]
-  34 - 0x1500 - [<Opcode.EPUSH: '0x1500'>, None, 0]
-  35 - 0xa400 - [<Opcode.LOAD: '0xA000'>, <Data.EStack: 4>, 0]
-  36 - 0xac00 - [<Opcode.LOAD: '0xA000'>, <Data.Ar: 5>, 0]
-  37 - 0x1200 - [<Opcode.CMP: '0x1200'>, None, 0]
-  38 - 0xe02a - [<Opcode.JZ: '0xE000'>, 42, 0]
-  39 - 0x1d00 - [<Opcode.PRINT: '0x1D00'>, None, 0]
-  40 - 0x1e00 - [<Opcode.INCESTACK: '0x1E00'>, None, 0]
-  41 - 0xf023 - [<Opcode.JMP: '0xF000'>, 35, 0]
-  42 - 0x1600 - [<Opcode.EPOP: '0x1600'>, None, 0]
-  43 - 0x1100 - [<Opcode.HALT: '0x1100'>, None, 0]
-
+  33 - 0x1100 - [<Opcode.HALT: '0x1100'>, None, 0]

@@ -18,4 +18,6 @@ out_mnemonics: |-
   9 - 0xf003 - [<Opcode.JMP: '0xF000'>, 3, 0]
   10 - 0x1600 - [<Opcode.EPOP: '0x1600'>, None, 0]
   11 - 0x1100 - [<Opcode.HALT: '0x1100'>, None, 0]
-  
+
+out_stdout: |-
+  ['H', 'e', 'l', 'l', 'o', ' ', 'W', 'o', 'r', 'l', 'd', '!']

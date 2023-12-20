@@ -1,8 +1,8 @@
+image: python:3.10
+
 stages:
 - install-deps
 - format-check
-
-image: python:3.10
 
 deps:
   stage: install-deps

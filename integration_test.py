@@ -3,24 +3,14 @@ import io
 import logging
 import os
 import tempfile
+
+import machine
 import pytest
 import translator
-import machine
 
 
 @pytest.mark.golden_test("golden/*.yml")
-def test_translator_and_machine(golden, caplog):
-    """Вход:
-
-    - `in_source` -- исходный код
-    - `in_stdin` -- данные на ввод процессора для симуляции
-
-    Выход:
-
-    - `out_code` -- машинный код, сгенерированный транслятором
-    - `out_stdout` -- стандартный вывод транслятора и симулятора
-    - `out_log` -- журнал программы
-    """
+def test_user(golden, caplog, tmp_path):
     # Установим уровень отладочного вывода на DEBUG
     caplog.set_level(logging.DEBUG)
 
@@ -42,8 +32,8 @@ def test_translator_and_machine(golden, caplog):
         # Запускаем транслятор и собираем весь стандартный вывод в переменную
         # stdout
         with contextlib.redirect_stdout(io.StringIO()) as stdout:
-            translator.main(source, target_instructions, target_mnemonics, target_data)
-            print("============================================================")
+            translator.main(source, target_instructions,
+                            target_mnemonics, target_data)
             machine.main(target_instructions, target_data, input_stream)
 
         # Выходные данные также считываем в переменные.
@@ -52,5 +42,4 @@ def test_translator_and_machine(golden, caplog):
 
         # Проверяем, что ожидания соответствуют реальности.
         assert mnemonics == golden.out["out_mnemonics"]
-        # assert stdout.getvalue() == golden.out["out_stdout"]
-        # assert caplog.text == golden.out["out_log"]
+        assert stdout.getvalue() == golden.out["out_stdout"]

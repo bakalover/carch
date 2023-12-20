@@ -39,10 +39,11 @@ class DataPath:
 
     def mem_load(self) -> int:
         assert self.data_address + 1 <= 1024, "Data memory border violation!"
-        return int.from_bytes(self.data[self.data_address * DATAWORD : (self.data_address + 1) * DATAWORD], "big")
+        return int.from_bytes(self.data[self.data_address * DATAWORD: (self.data_address + 1) * DATAWORD], "big")
 
     def mem_store(self, val: int):
-        self.data[self.data_address * DATAWORD : (self.data_address + 1) * DATAWORD] = val.to_bytes(DATAWORD, "big")
+        self.data[self.data_address *
+                  DATAWORD: (self.data_address + 1) * DATAWORD] = val.to_bytes(DATAWORD, "big")
 
     def latch_set_zero(self):
         if self.acc == 0:
@@ -112,6 +113,7 @@ class DataPath:
         self.setup_zero_flag()
 
     def sig_mod(self):
+        assert self.mem_load() != 0, "Div by Zero"
         self.acc %= self.mem_load()
         self.setup_zero_flag()
 
@@ -125,7 +127,7 @@ class DataPath:
         assert len(self.input_buffer) != 0, "EOF!"
         symb = self.input_buffer.pop(0)
         symb_code: int
-        if symb == "\n":  # Crutch
+        if symb == "$":  # Crutch
             symb_code = ord(str(0)) - 48
         else:
             symb_code = ord(symb)
@@ -151,7 +153,7 @@ class ControlUnit:
 
     def acquire_next_instruction(self) -> str:
         assert self.icounter + 1 <= 1024, "Instruction memory border violation!"
-        return self.instr_memory[self.icounter * INSTRWORD : (self.icounter + 1) * INSTRWORD].hex()
+        return self.instr_memory[self.icounter * INSTRWORD: (self.icounter + 1) * INSTRWORD].hex()
 
     def execute_instruction(self):
         instr: str = self.acquire_next_instruction()
@@ -166,12 +168,14 @@ class ControlUnit:
         specific = bin2op_with_arg(instr[:1])
         match specific:
             case Opcode.LOAD:
-                self.data_path.latch_addr(Opcode.LOAD, int(instr, 16) & ADDRMASK)
+                self.data_path.latch_addr(
+                    Opcode.LOAD, int(instr, 16) & ADDRMASK)
                 self.data_path.latch_acc()
                 self.data_path.sig_acc_to_addr()
                 self.tick()
             case Opcode.STORE:
-                self.data_path.latch_addr(Opcode.STORE, int(instr, 16) & ADDRMASK)
+                self.data_path.latch_addr(
+                    Opcode.STORE, int(instr, 16) & ADDRMASK)
                 self.data_path.sig_write()
                 self.tick()
             case Opcode.CALL:
@@ -265,7 +269,7 @@ def simulation(instr: bytes, data: bytearray, input_buf: list[str]):
             control_unit.execute_instruction()
             logging.debug("%s", control_unit)
     except StopIteration:
-        print(data_path.output_buffer)
+        print(data_path.output_buffer, end="")
         pass
 
 

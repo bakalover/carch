@@ -1,4 +1,4 @@
-in_sourse: |-
+in_source: |-
   (define ans 2520)
   (define i 11)
   (defun is_ans (n) (
@@ -22,6 +22,9 @@ in_sourse: |-
 
 in_stdin: |-
   booboo
+
+out_stdout: |-
+  ['T', 'F']
 
 out_mnemonics: |-
   0 - 0xf037 - [<Opcode.JMP: '0xF000'>, 55, 0]
