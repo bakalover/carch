@@ -257,15 +257,15 @@ def translate(source: str):
     add_instr(Opcode.HALT)
 
 
-def main(source_path):
+def main(source_path, target_instructions, target_memonics, target_data):
     with open(source_path, encoding="utf-8") as file:
         source = file.read()
         source = "(" + source + ")"
         translate(source)
-        binary_transform(instr, data)
+        binary_transform(instr, data, target_instructions, target_memonics, target_data)
 
 
 if __name__ == "__main__":
-    assert len(sys.argv) == 2
-    _, source_path = sys.argv
-    main(source_path)
+    assert len(sys.argv) == 5
+    _, source_path, target_instructions, target_memonics, target_data = sys.argv
+    main(source_path, target_instructions, target_memonics, target_data)

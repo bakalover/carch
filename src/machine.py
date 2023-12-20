@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import sys
 
 from binary import bin2op_no_arg, bin2op_with_arg
@@ -238,14 +239,31 @@ class ControlUnit:
             self.data_path.sig_read()
             self.data_path.sig_write()
 
+    def __repr__(self) -> str:
+        state_repr = "Icounter: {:3} MemAddr: {:3} Acc: {}, Zero: {}, Estack: {}, Fstack: {}".format(
+            self.icounter,
+            self.data_path.data_address,
+            self.data_path.acc,
+            self.data_path.zero_flag,
+            self.data_path.estack_ptr,
+            self.data_path.fstack_ptr,
+        )
+
+        instr = self.acquire_next_instruction()
+
+        return "{} \nNext instruction: {}".format(state_repr, instr)
+
 
 def simulation(instr: bytes, data: bytearray, input_buf: list[str]):
     data_path = DataPath(data, input_buf)
     control_unit = ControlUnit(instr, data_path)
 
+    logging.debug("%s", control_unit)
+
     try:
         while True:
             control_unit.execute_instruction()
+            logging.debug("%s", control_unit)
     except StopIteration:
         print(data_path.output_buffer)
         pass
@@ -266,5 +284,6 @@ def main(instr_file: str, data_file: str, input_file: str):
 
 
 if __name__ == "__main__":
+    logging.getLogger().setLevel(logging.DEBUG)
     _, code_file, data_file, input_file = sys.argv
     main(code_file, data_file, input_file)

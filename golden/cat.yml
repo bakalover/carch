@@ -1,0 +1,34 @@
+in_source: |-
+  (define cat "")
+  (read cat)
+  (print cat)
+
+in_stdin: |-
+  akjsdhgdauilskdjdhakgajwyuadwhj81290309+++----
+
+out_mnemonics: |-
+  0 - 0xf001 - [<Opcode.JMP: '0xF000'>, 1, 0]
+  1 - 0xa000 - [<Opcode.LOAD: '0xA000'>, 'cat', 0]
+  2 - 0x1500 - [<Opcode.EPUSH: '0x1500'>, None, 0]
+  3 - 0xa400 - [<Opcode.LOAD: '0xA000'>, <Data.EStack: 4>, 0]
+  4 - 0x1c00 - [<Opcode.READ: '0x1C00'>, None, 0]
+  5 - 0x1200 - [<Opcode.CMP: '0x1200'>, None, 0]
+  6 - 0xe00a - [<Opcode.JZ: '0xE000'>, 10, 0]
+  7 - 0xbc00 - [<Opcode.STORE: '0xB000'>, <Data.Ar: 5>, 0]
+  8 - 0x1e00 - [<Opcode.INCESTACK: '0x1E00'>, None, 0]
+  9 - 0xf003 - [<Opcode.JMP: '0xF000'>, 3, 0]
+  10 - 0x1900 - [<Opcode.CLEAR: '0x1900'>, None, 0]
+  11 - 0xb400 - [<Opcode.STORE: '0xB000'>, <Data.EStack: 4>, 0]
+  12 - 0x1600 - [<Opcode.EPOP: '0x1600'>, None, 0]
+  13 - 0xa000 - [<Opcode.LOAD: '0xA000'>, 'cat', 0]
+  14 - 0x1500 - [<Opcode.EPUSH: '0x1500'>, None, 0]
+  15 - 0xa400 - [<Opcode.LOAD: '0xA000'>, <Data.EStack: 4>, 0]
+  16 - 0xac00 - [<Opcode.LOAD: '0xA000'>, <Data.Ar: 5>, 0]
+  17 - 0x1200 - [<Opcode.CMP: '0x1200'>, None, 0]
+  18 - 0xe016 - [<Opcode.JZ: '0xE000'>, 22, 0]
+  19 - 0x1d00 - [<Opcode.PRINT: '0x1D00'>, None, 0]
+  20 - 0x1e00 - [<Opcode.INCESTACK: '0x1E00'>, None, 0]
+  21 - 0xf00f - [<Opcode.JMP: '0xF000'>, 15, 0]
+  22 - 0x1600 - [<Opcode.EPOP: '0x1600'>, None, 0]
+  23 - 0x1100 - [<Opcode.HALT: '0x1100'>, None, 0]
+

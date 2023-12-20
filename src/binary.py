@@ -1,28 +1,29 @@
-from io import BufferedWriter
-
 from data import DATAWORD, INSTRWORD, Data, anon_offset
 from isa import Opcode
 
 
-def binary_transform(instructions, data):
-    with open("instructions", "wb") as file:
-        file.write(b"\x00" * INSTRWORD * 1024)
-        file.seek(0)
-        for _, instruction in instructions.items():
-            to_dump = instruction[0].value
-            mem = instruction[1]
-            shift = instruction[2]
-            match to_dump[2]:
-                case "1":
-                    file.write(int(to_dump, 16).to_bytes(INSTRWORD, "big"))
-                case "A":
-                    dump_load(mem, to_dump, shift, file, data)
-                case "B":
-                    dump_store(mem, to_dump, shift, file, data)
-                case _:
-                    file.write((int(to_dump, 16) | mem).to_bytes(INSTRWORD, "big"))
+def binary_transform(instructions, data, target_instructions, target_memonics, target_data):
+    with open(target_memonics, "w") as mnemonic:
+        with open(target_instructions, "wb") as file:
+            file.write(b"\x00" * INSTRWORD * 1024)
+            file.seek(0)
+            for icounter, instruction in instructions.items():
+                to_dump = instruction[0].value
+                mem = instruction[1]
+                shift = instruction[2]
+                match to_dump[2]:
+                    case "1":
+                        file.write(int(to_dump, 16).to_bytes(INSTRWORD, "big"))
+                        mnemonic.write("{} - {} - {}\n".format(icounter, hex(int(to_dump, 16)), instruction))
+                    case "A":
+                        dump_load(icounter, instruction, mem, to_dump, shift, file, mnemonic, data)
+                    case "B":
+                        dump_store(icounter, instruction, mem, to_dump, shift, file, mnemonic, data)
+                    case _:
+                        file.write((int(to_dump, 16) | mem).to_bytes(INSTRWORD, "big"))
+                        mnemonic.write("{} - {} - {}\n".format(icounter, hex(int(to_dump, 16) | mem), instruction))
 
-    with open("data", "wb") as file:
+    with open(target_data, "wb") as file:
         file.write(b"\x00" * DATAWORD * 1024)
         file.seek(0)
         for _, value in data[Data.Named].items():
@@ -35,30 +36,39 @@ def binary_transform(instructions, data):
                 file.write(value.to_bytes(DATAWORD, "big"))
 
 
-def dump_load(mem, to_dump: str, shift: int, file: BufferedWriter, data):
+def dump_load(icounter, instruction, mem, to_dump: str, shift: int, file, mnemonic, data):
     if mem == Data.EStack:
         file.write((int(to_dump, 16) | shift | 0x0400).to_bytes(INSTRWORD, "big"))
+        mnemonic.write("{} - {} - {}\n".format(icounter, hex(int(to_dump, 16) | shift | 0x0400), instruction))
     elif mem == Data.FStack:
         file.write((int(to_dump, 16) | shift | 0x0800).to_bytes(INSTRWORD, "big"))
+        mnemonic.write("{} - {} - {}\n".format(icounter, hex(int(to_dump, 16) | shift | 0x0800), instruction))
     elif mem == Data.Ar:
         file.write((int(to_dump, 16) | shift | 0x0C00).to_bytes(INSTRWORD, "big"))
+        mnemonic.write("{} - {} - {}\n".format(icounter, hex(int(to_dump, 16) | shift | 0x0C00), instruction))
     elif isinstance(mem, str):
         addr = data[Data.Named].get(mem)[0]
         file.write((int(to_dump, 16) | addr).to_bytes(INSTRWORD, "big"))
+        mnemonic.write("{} - {} - {}\n".format(icounter, hex(int(to_dump, 16) | addr), instruction))
     else:
         file.write((int(to_dump, 16) | mem).to_bytes(INSTRWORD, "big"))
+        mnemonic.write("{} - {} - {}\n".format(icounter, hex(int(to_dump, 16) | mem), instruction))
 
 
-def dump_store(mem, to_dump: str, shift: int, file: BufferedWriter, data):
+def dump_store(icounter, instruction, mem, to_dump: str, shift: int, file, mnemonic, data):
     if mem == Data.EStack:
         file.write((int(to_dump, 16) | shift | 0x0400).to_bytes(INSTRWORD, "big"))
+        mnemonic.write("{} - {} - {}\n".format(icounter, hex(int(to_dump, 16) | shift | 0x0400), instruction))
     elif mem == Data.FStack:
         file.write((int(to_dump, 16) | shift | 0x0800).to_bytes(INSTRWORD, "big"))
+        mnemonic.write("{} - {} - {}\n".format(icounter, hex(int(to_dump, 16) | shift | 0x0800), instruction))
     elif mem == Data.Ar:
         file.write((int(to_dump, 16) | shift | 0x0C00).to_bytes(INSTRWORD, "big"))
+        mnemonic.write("{} - {} - {}\n".format(icounter, hex(int(to_dump, 16) | shift | 0x0C00), instruction))
     else:
         addr = data[Data.Named].get(mem)[0]
         file.write((int(to_dump, 16) | addr).to_bytes(INSTRWORD, "big"))
+        mnemonic.write("{} - {} - {}\n".format(icounter, hex(int(to_dump, 16) | addr), instruction))
 
 
 def bin2op_no_arg(bin_code: str):

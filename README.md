@@ -1,6 +1,8 @@
 # Language
 
 With lisp flavour~~
+lisp | acc | harv | hw | instr | binary | stream | port | cstr | prob5 | [4]char
+prob[5] answer: 232792560
 
 ## Syntax
 ```
