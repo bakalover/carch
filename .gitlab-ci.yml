@@ -10,12 +10,4 @@ ci:
     - poetry run ruff check .
     - petry run coverage run -m pytest --verbose
     # - find . -type f -name "*.py" | xargs -t coverage report
-format:
-  stage: format-check
-  needs:
-    - deps
-  script:
-    - poetry run ruff format --check .
-    - poetry run ruff check .
-    # - coverage run -m pytest --verbose
-    # - find . -type f -name "*.py" | xargs -t coverage report
+
