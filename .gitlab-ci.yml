@@ -1,9 +1,11 @@
 lab:
-  stage: test
   image: python:3.10
+  stage: deps
   script:
     - pip install poetry
     - poetry install
+  stage: pretty
+  script:
     - poetry run ruff format --check .
     - poetry run ruff check .
     # - coverage run -m pytest --verbose
