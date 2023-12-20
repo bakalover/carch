@@ -2,7 +2,7 @@ image: python:3.10
 
 
 ci:
-  stage: ci
+  stage: test
   script:
     - pip install poetry
     - poetry install
