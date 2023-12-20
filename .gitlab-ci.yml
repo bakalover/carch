@@ -2,8 +2,9 @@ stages:
 - install-deps
 - format-check
 
+image: python:3.10
+
 deps:
-  image: python:3.10
   stage: install-deps
   script:
     - pip install poetry
