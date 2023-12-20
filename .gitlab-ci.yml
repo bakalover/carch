@@ -8,6 +8,6 @@ ci:
     - poetry install
     - poetry run ruff format --check .
     - poetry run ruff check .
-    - petry run coverage run -m pytest --verbose
+    - poetry run coverage run -m pytest --verbose
     # - find . -type f -name "*.py" | xargs -t coverage report
 

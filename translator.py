@@ -21,6 +21,7 @@ ncounter: int = 0x0
 data = {Data.Named: {}, Data.Anon: {}}
 instr = {}
 
+
 def reset_state():
     global icounter, acounter, ncounter, data, instr
     icounter = 0x0
@@ -28,8 +29,6 @@ def reset_state():
     ncounter = 0x0
     data = {Data.Named: {}, Data.Anon: {}}
     instr = {}
-
-
 
 
 def add_instr(instruction: Opcode, mem: Data | str | int | None = None, shift: int = 0):
@@ -274,6 +273,7 @@ def main(source_path, target_instructions, target_memonics, target_data):
         translate(source)
         binary_transform(instr, data, target_instructions, target_memonics, target_data)
         reset_state()
+
 
 if __name__ == "__main__":
     assert len(sys.argv) == 5

@@ -32,8 +32,7 @@ def test_user(golden, caplog, tmp_path):
         # Запускаем транслятор и собираем весь стандартный вывод в переменную
         # stdout
         with contextlib.redirect_stdout(io.StringIO()) as stdout:
-            translator.main(source, target_instructions,
-                            target_mnemonics, target_data)
+            translator.main(source, target_instructions, target_mnemonics, target_data)
             machine.main(target_instructions, target_data, input_stream)
 
         # Выходные данные также считываем в переменные.
