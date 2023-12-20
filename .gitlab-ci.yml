@@ -11,7 +11,7 @@ deps:
 
 format:
   stage: format-check
-  needs: 
+  needs: install-deps
   script:
     - poetry run ruff format --check .
     - poetry run ruff check .
