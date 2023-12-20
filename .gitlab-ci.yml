@@ -8,9 +8,10 @@ deps:
   script:
     - pip install poetry
     - poetry install
-    
+
 format:
   stage: format-check
+  needs: 
   script:
     - poetry run ruff format --check .
     - poetry run ruff check .
