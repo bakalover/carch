@@ -1,10 +1,16 @@
-lab:
+stages:
+- install-deps
+- format-check
+
+deps:
   image: python:3.10
-  stage: deps
+  stage: install-deps
   script:
     - pip install poetry
     - poetry install
-  stage: pretty
+    
+format:
+  stage: format-check
   script:
     - poetry run ruff format --check .
     - poetry run ruff check .
