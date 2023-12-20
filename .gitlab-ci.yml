@@ -1,15 +1,15 @@
 image: python:3.10
 
-stages:
-- install-deps
-- format-check
 
-deps:
-  stage: install-deps
+ci:
+  stage: ci
   script:
     - pip install poetry
     - poetry install
-
+    - poetry run ruff format --check .
+    - poetry run ruff check .
+    - petry run coverage run -m pytest --verbose
+    # - find . -type f -name "*.py" | xargs -t coverage report
 format:
   stage: format-check
   needs:
