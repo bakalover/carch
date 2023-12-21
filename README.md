@@ -43,3 +43,7 @@ empty ::= ""
 - if [base s-exp] [then s-exp] [else s-exp] -> if result of [base s-exp] is "positive" return [then s-exp]'s value else [else s-exp]'s. "Positive" means it either string or non-zero number.
 
 for loop???
+
+## Scheme
+![image](./pic/Control_Unit.png)
+![image](./pic/Data_Path.png)
