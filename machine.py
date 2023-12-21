@@ -189,6 +189,7 @@ class ControlUnit:
                 self.icounter = int(instr[1:], 16)
 
     def execute_non_arg_instruction(self, instr: str):
+        global takt
         specific = bin2op_no_arg(instr[:2])
         if specific in {Opcode.CMP, Opcode.ZERO}:
             self.execute_flag_instruction(specific)
@@ -228,6 +229,7 @@ class ControlUnit:
         if instr == Opcode.ADD:
             # Sig dirrectly to acc (apply opp with 2-args: acc and [estack_ptr])
             self.data_path.sig_sum()
+
         elif instr == Opcode.SUB:
             self.data_path.sig_sub()
         elif instr == Opcode.MOD:
@@ -258,7 +260,6 @@ class ControlUnit:
 def simulation(instr: bytes, data: bytearray, input_buf: list[str]):
     data_path = DataPath(data, input_buf)
     control_unit = ControlUnit(instr, data_path)
-
     logging.debug("%s", control_unit)
 
     try:

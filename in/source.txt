@@ -1,5 +1,2 @@
-(define x "Hello/")
-(define name "")
-(read name)
-(print x)
-(print name)
+(define hi "Hello/World!")
+(print hi)
